@@ -28,10 +28,8 @@
 
 ## 📱 Capturas de pantalla
 
-## 📱 Capturas de pantalla
-
 <p align="center">
-  <img src="assets/captura de pantalla 1.jpg" width="300">
+  <img src="assets/tv screenshot.png" width="300">
   <img src="assets/captura de pantalla 2.png" width="300">
 </p>
 
