@@ -30,7 +30,7 @@
 
 <p align="center">
   <img src="assets/tv screenshot.png" width="300">
-  <img src="assets/captura de pantalla 2.png" width="300">
+  <img src="assets/phone screenshot.png" width="150">
 </p>
 
 ## 🛠️ Instalación
