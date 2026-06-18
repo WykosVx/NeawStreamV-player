@@ -1,0 +1,30 @@
+# Archivos de configuración de IDEs
+.idea/
+.vscode/
+*.iml
+
+# Archivos de caché y herramientas de construcción
+.dart_tool/
+.pub-cache/
+.packages
+.flutter-plugins
+.flutter-plugins-dependencies
+.project
+build/
+.dart_tool/
+.gradle/
+
+# Otros archivos locales
+local.properties
+.transient/
+.atom/
+.settings/
+
+# Sistema y archivos temporales
+.DS_Store
+Thumbs.db
+
+# Credenciales
+key.properties
+**/*.keystore
+**/*.jks

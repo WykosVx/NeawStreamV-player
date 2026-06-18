@@ -1,0 +1,2 @@
+-keep class com.google.android.gms.cast.framework.** { *; }
+-keep class com.google.android.gms.cast.framework.media.widget.** { *; }
