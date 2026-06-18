@@ -28,7 +28,12 @@
 
 ## 📱 Capturas de pantalla
 
-*(Aquí puedes arrastrar imágenes de tu app cuando las tengas para que la gente vea cómo luce)*
+## 📱 Capturas de pantalla
+
+<p align="center">
+  <img src="assets/captura de pantalla 1.png" width="250" alt="captura de pantalla 1">
+  <img src="assets/captura de pantalla 2.png" width="250" alt="captura de pantalla 2">
+</p>
 
 ## 🛠️ Instalación
 
