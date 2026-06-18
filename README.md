@@ -36,6 +36,5 @@
 2. **Instálalo** en tu dispositivo Android o Android TV.
 3. ¡Carga tu lista y comienza a disfrutar!
 
-## 📜 Licencia
-
-Este proyecto está bajo la licencia **MIT**. Consulta el archivo `LICENSE` para más detalles.
+## 📜 License
+This project is under the **MIT License**. Check the [LICENSE](LICENSE) file for more details.
