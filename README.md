@@ -28,9 +28,11 @@
 
 ## 📱 Capturas de pantalla
 
+## 📱 Capturas de pantalla
+
 <p align="center">
-  <img src="assets/captura de pantalla 1.jpg" width="250" alt="captura de pantalla 1">
-  <img src="assets/captura de pantalla 2.png" width="500" alt="captura de pantalla 2">
+  <img src="assets/captura de pantalla 1.jpg" width="300">
+  <img src="assets/captura de pantalla 2.png" width="300">
 </p>
 
 ## 🛠️ Instalación
