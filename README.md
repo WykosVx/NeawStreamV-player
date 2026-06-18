@@ -11,6 +11,12 @@
 ![Android TV](https://img.shields.io/badge/Android%20TV-3DDC84?style=for-the-badge&logo=android&logoColor=white)
 ![M3U Support](https://img.shields.io/badge/M3U-Supported-orange?style=flat-square)
 ![Xtream Support](https://img.shields.io/badge/Xtream-Supported-blue?style=flat-square)
+<p align="center">
+  <img src="https://img.shields.io/github/repo-size/WykosVx/Brazilian-Dog-?style=for-the-badge&color=lightgrey" alt="Repo Size">
+  <img src="https://img.shields.io/github/issues-closed/WykosVx/Brazilian-Dog-?style=for-the-badge&color=success" alt="Issues Closed">
+<img src="https://img.shields.io/badge/Made%20in-Paraguay%20🇵🇾-red?style=for-the-badge" alt="Paraguay">
+</p>
+  
 ¡Bienvenido a **NeawStreamV-player**! Una solución multimedia desarrollada en **Flutter**, diseñada para ofrecer una experiencia de reproducción fluida y eficiente tanto en **dispositivos móviles** como en **Android TV**.
 
 ## 🚀 Características
