@@ -43,7 +43,11 @@ class _PlayerScreenState extends State<PlayerScreen> {
   }
 
   Future<void> _cargarCanal() async {
-    if (_player != null) await _player!.dispose();
+    if (_player != null) {
+      await _player!.stop();
+      await _player!.dispose();
+      _player = null;
+    }
 
     setState(() => _isLoading = true);
 
@@ -61,23 +65,23 @@ class _PlayerScreenState extends State<PlayerScreen> {
     _controller = VideoController(_player!);
     final platform = _player!.platform as dynamic;
     
-    // Sincronización y Audio
     platform.setProperty('video-sync', 'display-resample'); 
     platform.setProperty('audio-channels', 'stereo');
     platform.setProperty('ad-lavc-ac3drc', '0');
     platform.setProperty('framedrop', 'vo');
     platform.setProperty('vd-lavc-threads', '4');
     
-    // Buffer y Estabilidad
     platform.setProperty('hwdec', 'no');
     platform.setProperty('cache', 'yes');
     platform.setProperty('cache-secs', '180');
     platform.setProperty('demuxer-max-bytes', '${bufferMb}MiB');
+    platform.setProperty('demuxer-max-back-bytes', '50MiB');
     platform.setProperty('live-cache', '60');
     platform.setProperty('hr-seek', 'yes');
     platform.setProperty('reconnect-stream', 'yes');
-    platform.setProperty('reconnect-delay-max', '5');
+    platform.setProperty('reconnect-on-network-error', 'yes');
     platform.setProperty('reconnect-on-http-error', 'yes');
+    platform.setProperty('reconnect-delay-max', '2');
 
     await _player!.open(
       Media(
@@ -107,9 +111,17 @@ class _PlayerScreenState extends State<PlayerScreen> {
   Future<void> _manejarReconexion() async {
     if (_isReconnecting) return;
     _isReconnecting = true;
-    _reintentos++;
     
-    int espera = (_reintentos * 3).clamp(3, 30);
+    _reintentos++;
+    debugPrint("Intento de reconexión #$_reintentos");
+   
+    if (_player != null) {
+      await _player!.stop();
+      await _player!.dispose();
+      _player = null;
+    }
+    
+    int espera = (_reintentos * 3).clamp(3, 15);
     await Future.delayed(Duration(seconds: espera));
     
     if (mounted) {
@@ -140,7 +152,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
   Widget build(BuildContext context) {
     if (_isLoading) {
       return Scaffold(
-        backgroundColor: Colors.black,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -155,12 +167,14 @@ class _PlayerScreenState extends State<PlayerScreen> {
               ),
               const SizedBox(height: 20),
               Text(
-                "Cargando: ${widget.listaCanales[_indiceActual].nombre}", 
-                style: const TextStyle(color: Colors.white, fontSize: 16),
+                "Cargando: ${widget.listaCanales[_indiceActual].nombre}",
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 16),
                 textAlign: TextAlign.center,
               ),
-              const Text("Optimizando Transmisión🪄...", 
-                  style: TextStyle(color: Colors.grey)),
+              Text(
+                "Optimizando Transmisión🪄...",
+                style: TextStyle(color: Theme.of(context).colorScheme.primary),
+              ),
             ],
           ),
         ),
