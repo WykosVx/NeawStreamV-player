@@ -19,7 +19,7 @@
   
 ¡Bienvenido a **NeawStreamV-player**! Una solución multimedia desarrollada en **Flutter**, diseñada para ofrecer una experiencia de reproducción fluida y eficiente tanto en **dispositivos móviles** como en **Android TV**.
 
-## 🚀 Características
+## <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Telegram-Animated-Emojis/main/Travel%20and%20Places/Rocket.webp" alt="Rocket" width="25" height="25" /> Características
 
 * **Compatibilidad M3U:** Carga tus listas de reproducción favoritas de manera rápida.
 * **Contenido Xtream:** Soporte nativo para servicios basados en códigos Xtream.
@@ -39,5 +39,5 @@
 2. **Instálalo** en tu dispositivo Android o Android TV.
 3. ¡Carga tu lista y comienza a disfrutar!
 
-## 📜 License
+## <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Telegram-Animated-Emojis/main/Objects/File%20Folder.webp" alt="File Folder" width="25" height="25" /> License
 This project is under the **MIT License**. Check the [LICENSE](LICENSE) file for more details.
