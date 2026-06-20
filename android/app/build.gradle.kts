@@ -2,6 +2,7 @@ plugins {
     id("com.android.application")
     id("kotlin-android")
     id("dev.flutter.flutter-gradle-plugin")
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -15,7 +16,7 @@ android {
     }
 
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString()
+        jvmTarget = "17"
     }
 
     defaultConfig {
@@ -30,7 +31,7 @@ android {
     buildTypes {
         release {
             signingConfig = signingConfigs.getByName("debug")
-           isMinifyEnabled = false 
+            isMinifyEnabled = false 
             isShrinkResources = false
         }
     }
@@ -41,9 +42,8 @@ flutter {
 }
 
 dependencies {
-    implementation("com.google.android.gms:play-services-cast-framework:21.4.0")
-    implementation("com.google.android.gms:play-services-cast:21.4.0")
-    implementation("androidx.mediarouter:mediarouter:1.7.0")
     implementation("androidx.appcompat:appcompat:1.6.1")
-    implementation("androidx.multidex:multidex:2.0.1") 
+    implementation("androidx.multidex:multidex:2.0.1")
 }
+
+ apply(plugin = "com.google.gms.google-services")
