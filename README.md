@@ -36,7 +36,21 @@
   <img src="assets/phone screenshot.png" width="150">
 </p>
 
-## <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Telegram-Animated-Emojis/main/Objects/Syringe.webp" alt="Syringe" width="25" height="25" /> Instalación
+## 🚀 Instalación Windows
+
+Para comenzar a disfrutar de la aplicación, solo sigue estos sencillos pasos:
+
+1.Descarga: Ve a la sección de Releases y descarga el archivo NeawStream-v4.0.0.zip.
+
+2.Descompresión: Haz clic derecho sobre el archivo descargado.
+
+3.Selecciona "Extraer todo..." y elige la carpeta donde prefieras tener la aplicación.
+
+4.Ejecución:Abre la carpeta descomprimida.
+
+5.Haz doble clic en neawstreamvplayer.exe para iniciar.
+
+## <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Telegram-Animated-Emojis/main/Objects/Syringe.webp" alt="Syringe" width="25" height="25" /> Instalación Android
 
 1. **Descarga** el archivo APK más reciente desde la sección de **[Releases](https://github.com/WykosVx/NeawStreamV-player/releases)**.
 2. **Instálalo** en tu dispositivo Android o Android TV.
