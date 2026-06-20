@@ -1,4 +1,4 @@
-# 📺 NeawStreamV-player
+# <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Telegram-Animated-Emojis/main/Objects/Television.webp" alt="Television" width="25" height="25" /> NeawStreamV-player
 <p align="center">
 <img src="app.png" width="200">
 </p>
@@ -16,8 +16,11 @@
   <img src="https://img.shields.io/badge/Made%20in-Paraguay%20🇵🇾-white?style=for-the-badge" alt="Paraguay">
   <img src="https://img.shields.io/github/issues-closed/WykosVx/Brazilian-Dog-?style=for-the-badge&color=lightgrey" alt="Issues Closed">
 </p>
-  
+
 ¡Bienvenido a **NeawStreamV-player**! Una solución multimedia desarrollada en **Flutter**, diseñada para ofrecer una experiencia de reproducción fluida y eficiente tanto en **dispositivos móviles** como en **Android TV**.
+
+## <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Telegram-Animated-Emojis/main/People/Eyes.webp" alt="Eyes" width="25" height="25" />Disclaimer
+**"NeawStreamV-player es un reproductor multimedia de propósito general. El software no contiene, proporciona, ni preinstala ningún tipo de lista de canales, contenido multimedia, o enlaces a fuentes externas. El usuario es el único responsable de la legalidad, propiedad y uso de los contenidos que decida cargar o reproducir mediante la aplicación. El autor no apoya ni fomenta el uso de material protegido por derechos de autor sin la debida licencia.**¡Gracias por usar NeawStreamV-player!
 
 ## <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Telegram-Animated-Emojis/main/Travel%20and%20Places/Rocket.webp" alt="Rocket" width="25" height="25" /> Características
 
@@ -26,14 +29,14 @@
 * **Optimizado:** Interfaz intuitiva, diseñada para funcionar perfectamente con mandos de TV y pantallas táctiles.
 * **Fluidez:** Bajo consumo de recursos y alta velocidad de carga.
 
-## 📱 Capturas de pantalla
+## <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Telegram-Animated-Emojis/main/Objects/Mobile%20Phone.webp" alt="Mobile Phone" width="25" height="25" /> Capturas de pantalla
 
 <p align="center">
   <img src="assets/tv screenshot.png" width="300">
   <img src="assets/phone screenshot.png" width="150">
 </p>
 
-## 🛠️ Instalación
+## <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Telegram-Animated-Emojis/main/Objects/Syringe.webp" alt="Syringe" width="25" height="25" /> Instalación
 
 1. **Descarga** el archivo APK más reciente desde la sección de **[Releases](https://github.com/WykosVx/NeawStreamV-player/releases)**.
 2. **Instálalo** en tu dispositivo Android o Android TV.
