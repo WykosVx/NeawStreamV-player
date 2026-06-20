@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:convert';
+import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:media_kit/media_kit.dart';
@@ -32,6 +35,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
   bool _isLoading = false;
   bool _isReconnecting = false;
   int _reintentos = 0;
+  double _porcentaje = 0.0;
+  String _datoCurioso = "";
+  Timer? _timer;
 
   @override
   void initState() {
@@ -39,7 +45,56 @@ class _PlayerScreenState extends State<PlayerScreen> {
     if (widget.isTV) {
       SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
     }
+    _inicializarCarga();
     _cargarCanal();
+  }
+
+  Future<void> _inicializarCarga() async {
+  List<dynamic> lista = [];
+  try {
+    final remoteConfig = FirebaseRemoteConfig.instance;
+    
+    await remoteConfig.setConfigSettings(RemoteConfigSettings(
+      fetchTimeout: const Duration(seconds: 5),
+      minimumFetchInterval: const Duration(minutes: 5), 
+    ));
+
+    await remoteConfig.fetchAndActivate();
+    String jsonString = remoteConfig.getString('datos_curiosos');
+    
+    if (jsonString.isNotEmpty) {
+      lista = jsonDecode(jsonString);
+      lista.shuffle();
+    }
+  } catch (e) {
+    debugPrint("Error obteniendo datos: $e");
+    lista = ["Bienvenido a Neaw Stream", "Cargando tu canal favorito..."];
+  }
+
+    int ticks = 0;
+    _timer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      
+      setState(() {
+        ticks++;
+        if (_porcentaje < 0.99) _porcentaje += 0.01;
+
+        if (lista.length >= 2) {
+          if (ticks < 50) {
+            _datoCurioso = lista[0];
+          } else if (ticks < 100) {
+            _datoCurioso = lista[1];
+          } else {
+            _datoCurioso = "";
+          }
+        }
+
+        if (_porcentaje >= 0.99) timer.cancel();
+      });
+    });
   }
 
   Future<void> _cargarCanal() async {
@@ -111,19 +166,14 @@ class _PlayerScreenState extends State<PlayerScreen> {
   Future<void> _manejarReconexion() async {
     if (_isReconnecting) return;
     _isReconnecting = true;
-    
     _reintentos++;
-    debugPrint("Intento de reconexión #$_reintentos");
-   
     if (_player != null) {
       await _player!.stop();
       await _player!.dispose();
       _player = null;
     }
-    
     int espera = (_reintentos * 3).clamp(3, 15);
     await Future.delayed(Duration(seconds: espera));
-    
     if (mounted) {
       _isReconnecting = false;
       _cargarCanal();
@@ -141,6 +191,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
   @override
   void dispose() {
+    _timer?.cancel();
     _player?.dispose();
     if (widget.isTV) {
       SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
@@ -157,13 +208,19 @@ class _PlayerScreenState extends State<PlayerScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              SizedBox(
-                width: 200,
-                height: 200,
-                child: Lottie.asset(
-                  'assets/animations/Loading Cat.json',
-                  repeat: true,
-                ),
+              Stack(
+                alignment: Alignment.center,
+                children: [
+                  SizedBox(
+                    width: 200,
+                    height: 200,
+                    child: Lottie.asset('assets/animations/Loading Cat.json', repeat: true),
+                  ),
+                  Text(
+                    "${(_porcentaje * 100).toInt()}%",
+                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+                  ),
+                ],
               ),
               const SizedBox(height: 20),
               Text(
@@ -171,9 +228,17 @@ class _PlayerScreenState extends State<PlayerScreen> {
                 style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 16),
                 textAlign: TextAlign.center,
               ),
-              Text(
-                "Optimizando Transmisión🪄...",
-                style: TextStyle(color: Theme.of(context).colorScheme.primary),
+              const SizedBox(height: 10),
+              SizedBox(
+                height: 60,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                  child: Text(
+                    _datoCurioso,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Theme.of(context).colorScheme.primary, fontStyle: FontStyle.italic),
+                  ),
+                ),
               ),
             ],
           ),
@@ -185,8 +250,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
       autofocus: true,
       onKeyEvent: (node, event) {
         if (event is KeyDownEvent) {
-          if (event.logicalKey == LogicalKeyboardKey.select ||
-              event.logicalKey == LogicalKeyboardKey.enter) {
+          if (event.logicalKey == LogicalKeyboardKey.select || event.logicalKey == LogicalKeyboardKey.enter) {
             _player?.playOrPause();
             return KeyEventResult.handled;
           } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
@@ -202,10 +266,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
       child: Scaffold(
         backgroundColor: Colors.black,
         body: Center(
-          child: Video(
-            controller: _controller!,
-            fit: BoxFit.contain,
-          ),
+          child: Video(controller: _controller!, fit: BoxFit.contain),
         ),
       ),
     );
