@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:NeawStreamVplayer/app_settings.dart';
-import 'package:NeawStreamVplayer/main.dart';
+import 'package:neawstreamvplayer/app_settings.dart';
+import 'package:neawstreamvplayer/main.dart';
 import 'package:flutter/services.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -78,7 +78,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 child: Text("  Color de interfaz:",
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold))),
             const SizedBox(height: 15),
-            
+
             _isTV ? _buildPaletaColores() : _buildCampoHexadecimal(),
 
             const SizedBox(height: 60),
@@ -97,74 +97,71 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildPaletaColores() {
-  return FocusTraversalGroup(
-    policy: OrderedTraversalPolicy(),
-    child: SizedBox(
-      height: 300,
-      child: GridView.builder(
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 6,
-          mainAxisSpacing: 10,
-          crossAxisSpacing: 10,
+    return FocusTraversalGroup(
+      policy: OrderedTraversalPolicy(),
+      child: SizedBox(
+        height: 300,
+        child: GridView.builder(
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 6,
+            mainAxisSpacing: 10,
+            crossAxisSpacing: 10,
+          ),
+          itemCount: _paletaColores.length,
+          itemBuilder: (context, index) {
+            return _buildBotonColor(index, _paletaColores[index]);
+          },
         ),
-        itemCount: _paletaColores.length,
-        itemBuilder: (context, index) {
-          return _buildBotonColor(index, _paletaColores[index]);
-        },
       ),
-    ),
-  );
-}
+    );
+  }
 
-Widget _buildBotonColor(int index, Color color) {
-  final int colorVal = color.value & 0xFFFFFFFF;
-  final int selectedVal = _themeColor.value & 0xFFFFFFFF;
-  final FocusNode node = _focusNodes[index];
+  Widget _buildBotonColor(int index, Color color) {
+    final int colorVal = color.value & 0xFFFFFFFF;
+    final int selectedVal = _themeColor.value & 0xFFFFFFFF;
+    final FocusNode node = _focusNodes[index];
 
-  return Focus(
-    focusNode: node,
-    onKey: (node, event) {
-      if (event is RawKeyDownEvent && 
-         (event.logicalKey.keyLabel == "Select" || event.logicalKey.keyLabel == "Enter")) {
-        setState(() {
-          _themeColor = color;
-          _hexColorController.text = color.value.toRadixString(16).substring(2).toUpperCase();
-        });
-        AppSettings.saveSettings(128, _mostrarLogs, color.value);
-        globalAccentColor.value = color;
-        return KeyEventResult.handled;
-      }
-      return KeyEventResult.ignored;
-    },
-    onFocusChange: (focused) => setState(() {}),
-    child: InkWell(
-      onTap: () {
-        setState(() {
-          _themeColor = color;
-          _hexColorController.text = color.value.toRadixString(16).substring(2).toUpperCase();
-        });
-        AppSettings.saveSettings(128, _mostrarLogs, color.value);
-        globalAccentColor.value = color;
+    return Focus(
+      focusNode: node,
+      onKey: (node, event) {
+        if (event is RawKeyDownEvent &&
+            (event.logicalKey.keyLabel == "Select" || event.logicalKey.keyLabel == "Enter")) {
+          setState(() {
+            _themeColor = color;
+            _hexColorController.text = color.value.toRadixString(16).substring(2).toUpperCase();
+          });
+          return KeyEventResult.handled;
+        }
+        return KeyEventResult.ignored;
       },
-      child: Container(
-        width: 60, height: 60,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: node.hasFocus ? Colors.white.withOpacity(0.2) : Colors.transparent,
-          border: Border.all(
-            color: node.hasFocus ? Colors.white : Colors.transparent,
-            width: 4,
+      onFocusChange: (focused) => setState(() {}),
+      child: InkWell(
+        onTap: () {
+          setState(() {
+            _themeColor = color;
+            _hexColorController.text = color.value.toRadixString(16).substring(2).toUpperCase();
+          });
+        },
+        child: Container(
+          width: 60, height: 60,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: node.hasFocus ? Colors.white.withOpacity(0.2) : Colors.transparent,
+            border: Border.all(
+              color: node.hasFocus ? Colors.white : Colors.transparent,
+              width: 4,
+            ),
+          ),
+          padding: const EdgeInsets.all(4),
+          child: CircleAvatar(
+            backgroundColor: color,
+            child: colorVal == selectedVal ? const Icon(Icons.check, color: Colors.white) : null,
           ),
         ),
-        padding: const EdgeInsets.all(4),
-        child: CircleAvatar(
-          backgroundColor: color,
-          child: colorVal == selectedVal ? const Icon(Icons.check, color: Colors.white) : null,
-        ),
       ),
-    ),
-  );
-}
+    );
+  }
+
   Widget _buildCampoHexadecimal() {
     return TextFormField(
       controller: _hexColorController,
