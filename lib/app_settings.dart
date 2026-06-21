@@ -12,12 +12,13 @@ class AppSettings {
     await prefs.setBool(keyShowLogs, showLogs);
     await prefs.setInt(keyThemeColor, colorValue);
   }
+
   static Future<Map<String, dynamic>> getSettings() async {
     final prefs = await SharedPreferences.getInstance();
-    
+
     return {
       'buffer': prefs.getInt(keyBufferSize) ?? 128,
-      'showLogs': prefs.getBool(keyShowLogs) ?? false, 
+      'showLogs': prefs.getBool(keyShowLogs) ?? false,
       'themeColor': prefs.getInt(keyThemeColor) ?? Colors.blue.value,
     };
   }
