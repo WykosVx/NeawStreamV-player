@@ -1,12 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:lottie/lottie.dart';
+import '../app_settings.dart';
 import 'models/canal_model.dart';
 
 class PlayerScreen extends StatefulWidget {
@@ -30,7 +30,8 @@ class PlayerScreen extends StatefulWidget {
 class _PlayerScreenState extends State<PlayerScreen> {
   Player? _player;
   VideoController? _controller;
-  
+  final FocusNode _focusNode = FocusNode();
+
   late int _indiceActual = widget.indiceInicial;
   bool _isLoading = false;
   bool _isReconnecting = false;
@@ -50,26 +51,15 @@ class _PlayerScreenState extends State<PlayerScreen> {
   }
 
   Future<void> _inicializarCarga() async {
-  List<dynamic> lista = [];
-  try {
-    final remoteConfig = FirebaseRemoteConfig.instance;
-    
-    await remoteConfig.setConfigSettings(RemoteConfigSettings(
-      fetchTimeout: const Duration(seconds: 5),
-      minimumFetchInterval: const Duration(minutes: 5), 
-    ));
-
-    await remoteConfig.fetchAndActivate();
-    String jsonString = remoteConfig.getString('datos_curiosos');
-    
-    if (jsonString.isNotEmpty) {
+    List<dynamic> lista = [];
+    try {
+      String jsonString = await rootBundle.loadString('assets/datos_curiosos.json');
       lista = jsonDecode(jsonString);
       lista.shuffle();
+    } catch (e) {
+      debugPrint("Error cargando datos locales: $e");
+      lista = ["Bienvenido a Neaw Stream", "Disfruta de la mejor calidad"];
     }
-  } catch (e) {
-    debugPrint("Error obteniendo datos: $e");
-    lista = ["Bienvenido a Neaw Stream", "Cargando tu canal favorito..."];
-  }
 
     int ticks = 0;
     _timer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
@@ -77,16 +67,16 @@ class _PlayerScreenState extends State<PlayerScreen> {
         timer.cancel();
         return;
       }
-      
+
       setState(() {
         ticks++;
         if (_porcentaje < 0.99) _porcentaje += 0.01;
 
-        if (lista.length >= 2) {
+        if (lista.isNotEmpty) {
           if (ticks < 50) {
-            _datoCurioso = lista[0];
+            _datoCurioso = lista[0 % lista.length];
           } else if (ticks < 100) {
-            _datoCurioso = lista[1];
+            _datoCurioso = lista[1 % lista.length];
           } else {
             _datoCurioso = "";
           }
@@ -107,7 +97,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
     setState(() => _isLoading = true);
 
     final prefs = await SharedPreferences.getInstance();
-    int bufferMb = prefs.getInt('buffer_size') ?? 128; 
+    int bufferMb = prefs.getInt('buffer_size') ?? 128;
     int bufferBytes = bufferMb * 1024 * 1024;
 
     _player = Player(
@@ -119,19 +109,19 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
     _controller = VideoController(_player!);
     final platform = _player!.platform as dynamic;
-    
-    platform.setProperty('video-sync', 'display-resample'); 
+
+    platform.setProperty('video-sync', 'audio');
+    platform.setProperty('vd-lavc-fast', 'yes');
+    platform.setProperty('vd-lavc-threads', '8');
+    platform.setProperty('framedrop', 'vo');
+    platform.setProperty('hwdec', 'auto'); // Fijo y estable
+    platform.setProperty('cache', 'yes');
+    platform.setProperty('cache-secs', '10');
+    platform.setProperty('live-cache', '10');
+    platform.setProperty('demuxer-max-bytes', '${bufferMb}MiB');
+    platform.setProperty('demuxer-max-back-bytes', '10MiB');
     platform.setProperty('audio-channels', 'stereo');
     platform.setProperty('ad-lavc-ac3drc', '0');
-    platform.setProperty('framedrop', 'vo');
-    platform.setProperty('vd-lavc-threads', '4');
-    
-    platform.setProperty('hwdec', 'no');
-    platform.setProperty('cache', 'yes');
-    platform.setProperty('cache-secs', '180');
-    platform.setProperty('demuxer-max-bytes', '${bufferMb}MiB');
-    platform.setProperty('demuxer-max-back-bytes', '50MiB');
-    platform.setProperty('live-cache', '60');
     platform.setProperty('hr-seek', 'yes');
     platform.setProperty('reconnect-stream', 'yes');
     platform.setProperty('reconnect-on-network-error', 'yes');
@@ -143,8 +133,16 @@ class _PlayerScreenState extends State<PlayerScreen> {
         widget.listaCanales[_indiceActual].url,
         extras: {'force_stream': 'true'},
       ),
-      play: false, 
+      play: false,
     );
+
+    Future.delayed(const Duration(seconds: 10), () {
+      if (mounted && _isLoading && _player != null) {
+        debugPrint("Safety Timeout: Forzando inicio...");
+        _player!.play();
+        setState(() => _isLoading = false);
+      }
+    });
 
     await Future.delayed(const Duration(seconds: 10));
 
@@ -193,6 +191,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
   void dispose() {
     _timer?.cancel();
     _player?.dispose();
+    _focusNode.dispose();
     if (widget.isTV) {
       SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     }
@@ -248,9 +247,13 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
     return Focus(
       autofocus: true,
+      focusNode: _focusNode,
       onKeyEvent: (node, event) {
         if (event is KeyDownEvent) {
-          if (event.logicalKey == LogicalKeyboardKey.select || event.logicalKey == LogicalKeyboardKey.enter) {
+          if (event.logicalKey == LogicalKeyboardKey.escape) {
+            Navigator.pop(context);
+            return KeyEventResult.handled;
+          } else if (event.logicalKey == LogicalKeyboardKey.select || event.logicalKey == LogicalKeyboardKey.enter) {
             _player?.playOrPause();
             return KeyEventResult.handled;
           } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
