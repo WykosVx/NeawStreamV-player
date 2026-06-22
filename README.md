@@ -40,7 +40,7 @@
 
 </div>
 
-<img src="assets/windows_logo.png" width="50"> Instalación Windows
+<img src="assets/windows_logo.png" width="15"> Instalación Windows
 
 Para comenzar a disfrutar de la aplicación, solo sigue estos sencillos pasos:
 
@@ -54,7 +54,7 @@ Para comenzar a disfrutar de la aplicación, solo sigue estos sencillos pasos:
 
 5.Haz doble clic en neawstreamvplayer.exe para iniciar.
 
-## <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Telegram-Animated-Emojis/main/Objects/Syringe.webp" alt="Syringe" width="25" height="25" /> Instalación Android
+<img src="assets/android_logo.png" width="15"> Instalación Android
 
 1. **Descarga** el archivo APK más reciente desde la sección de **[Releases](https://github.com/WykosVx/NeawStreamV-player/releases)**.
 2. **Instálalo** en tu dispositivo Android o Android TV.
