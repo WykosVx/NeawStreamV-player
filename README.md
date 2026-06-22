@@ -40,21 +40,21 @@
 
 </div>
 
-<img src="assets/windows_logo.png" width="15"> Instalación Windows
+### <img src="assets/windows_logo.png" width="15">  Instalación Windows
 
 Para comenzar a disfrutar de la aplicación, solo sigue estos sencillos pasos:
 
-1.Descarga: Ve a la sección de Releases y descarga el archivo NeawStream-V5.0.0.zip.
+1.**Descarga:** Ve a la sección de **[Releases](https://github.com/WykosVx/NeawStreamV-player/releases)** y descarga el archivo NeawStream-V5.0.0.zip.
 
-2.Descompresión: Haz clic derecho sobre el archivo descargado.
+2.**Descompresión:** Haz clic derecho sobre el archivo descargado.
 
-3.Selecciona "Extraer todo..." y elige la carpeta donde prefieras tener la aplicación.
+3.**Selecciona "Extraer todo..."** y elige la carpeta donde prefieras tener la aplicación.
 
-4.Ejecución:Abre la carpeta descomprimida.
+4.**Ejecución:** Abre la carpeta descomprimida.
 
 5.Haz doble clic en neawstreamvplayer.exe para iniciar.
 
-<img src="assets/android_logo.png" width="15"> Instalación Android
+### <img src="assets/android_logo.png" width="15"> Instalación Android
 
 1. **Descarga** el archivo APK más reciente desde la sección de **[Releases](https://github.com/WykosVx/NeawStreamV-player/releases)**.
 2. **Instálalo** en tu dispositivo Android o Android TV.
