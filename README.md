@@ -3,7 +3,7 @@
 <img src="app.png" width="200">
 </p>
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue)
+![Version](https://img.shields.io/badge/version-5.0.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Flutter](https://img.shields.io/badge/Flutter-02569B?style=for-the-badge&logo=flutter&logoColor=white)
 ![Dart](https://img.shields.io/badge/Dart-0175C2?style=for-the-badge&logo=dart&logoColor=white)
