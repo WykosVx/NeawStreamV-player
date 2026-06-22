@@ -32,10 +32,13 @@
 
 ## <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Telegram-Animated-Emojis/main/Objects/Mobile%20Phone.webp" alt="Mobile Phone" width="25" height="25" /> Capturas de pantalla
 
-<p align="center">
-  <img src="assets/tv screenshot.png" width="300">
-  <img src="assets/phone screenshot.png" width="150">
-</p>
+<div align="center">
+
+| PC | TV | Phone |
+| :---: | :---: | :---: |
+| <img src="assets/pc screenshot.png" width="300"> | <img src="assets/tv screenshot.png" width="300"> | <img src="assets/phone screenshot.png" width="150"> |
+
+</div>
 
 ## 🚀 Instalación Windows
 
