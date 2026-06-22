@@ -67,21 +67,14 @@ class _PlayerScreenState extends State<PlayerScreen> {
         timer.cancel();
         return;
       }
-
       setState(() {
         ticks++;
         if (_porcentaje < 0.99) _porcentaje += 0.01;
-
         if (lista.isNotEmpty) {
-          if (ticks < 50) {
-            _datoCurioso = lista[0 % lista.length];
-          } else if (ticks < 100) {
-            _datoCurioso = lista[1 % lista.length];
-          } else {
-            _datoCurioso = "";
-          }
+          if (ticks < 50) _datoCurioso = lista[0 % lista.length];
+          else if (ticks < 100) _datoCurioso = lista[1 % lista.length];
+          else _datoCurioso = "";
         }
-
         if (_porcentaje >= 0.99) timer.cancel();
       });
     });
@@ -94,65 +87,67 @@ class _PlayerScreenState extends State<PlayerScreen> {
       _player = null;
     }
 
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _porcentaje = 0.0;
+    });
 
     final prefs = await SharedPreferences.getInstance();
     int bufferMb = prefs.getInt('buffer_size') ?? 128;
     int bufferBytes = bufferMb * 1024 * 1024;
 
-    _player = Player(
-      configuration: PlayerConfiguration(
-        bufferSize: bufferBytes,
-        vo: 'mediacodec',
-      ),
-    );
-
+    _player = Player(configuration: PlayerConfiguration(bufferSize: bufferBytes, vo: 'mediacodec'));
     _controller = VideoController(_player!);
-    final platform = _player!.platform as dynamic;
 
-    platform.setProperty('video-sync', 'audio');
+    final platform = _player!.platform as dynamic;
+    platform.setProperty('interpolation', 'no');
+    platform.setProperty('video-sync', 'audio-adrop');
+    platform.setProperty('framedrop', 'decoder');
+    platform.setProperty('cache', 'yes');
+    platform.setProperty('cache-secs', '60');
+    platform.setProperty('cache-initial', '5000');
+    platform.setProperty('live-cache', '10');
+    platform.setProperty('cache-pause', 'no');
+    platform.setProperty('cache-pause-initial', 'yes');
+    platform.setProperty('cache-backbuffer', '50');
+    platform.setProperty('demuxer-readahead-secs', '10');
+    platform.setProperty('tscale', 'oversample');
+    platform.setProperty('vd-lavc-dr', 'yes');
     platform.setProperty('vd-lavc-fast', 'yes');
     platform.setProperty('vd-lavc-threads', '8');
-    platform.setProperty('framedrop', 'vo');
-    platform.setProperty('hwdec', 'auto'); // Fijo y estable
-    platform.setProperty('cache', 'yes');
-    platform.setProperty('cache-secs', '10');
-    platform.setProperty('live-cache', '10');
-    platform.setProperty('demuxer-max-bytes', '${bufferMb}MiB');
-    platform.setProperty('demuxer-max-back-bytes', '10MiB');
+    platform.setProperty('hwdec', 'mediacodec');
+    platform.setProperty('demuxer-max-bytes', '256MiB');
+    platform.setProperty('demuxer-max-back-bytes', '64MiB');
     platform.setProperty('audio-channels', 'stereo');
     platform.setProperty('ad-lavc-ac3drc', '0');
     platform.setProperty('hr-seek', 'yes');
     platform.setProperty('reconnect-stream', 'yes');
     platform.setProperty('reconnect-on-network-error', 'yes');
     platform.setProperty('reconnect-on-http-error', 'yes');
+    platform.setProperty('force-window', 'immediate');
+    platform.setProperty('network-timeout', '10');
+    platform.setProperty('vd-lavc-threads', '0');
     platform.setProperty('reconnect-delay-max', '2');
 
-    await _player!.open(
-      Media(
-        widget.listaCanales[_indiceActual].url,
-        extras: {'force_stream': 'true'},
-      ),
-      play: false,
-    );
+    _player!.setVolume(0.0);
 
+    await _player!.open(
+      Media(widget.listaCanales[_indiceActual].url, extras: {'force_stream': 'true'}),
+    );
+    _player!.play();
     Future.delayed(const Duration(seconds: 10), () {
-      if (mounted && _isLoading && _player != null) {
-        debugPrint("Safety Timeout: Forzando inicio...");
-        _player!.play();
+      if (mounted) {
         setState(() => _isLoading = false);
+        _player!.seek(Duration.zero);
+        _player!.setVolume(100.0);
+        _player!.play();
       }
     });
 
-    await Future.delayed(const Duration(seconds: 10));
-
-    if (mounted) {
-      _player!.play();
-      setState(() => _isLoading = false);
-    }
-
     _player!.stream.buffering.listen((buffering) {
-      if (mounted && buffering) setState(() => _isLoading = true);
+      if (mounted && !_isLoading) {
+        _player!.setVolume(buffering ? 0.0 : 100.0);
+      }
     });
 
     _player!.stream.error.listen((error) {
