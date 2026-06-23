@@ -44,7 +44,7 @@
 
 Para comenzar a disfrutar de la aplicación, solo sigue estos sencillos pasos:
 
-1.**Descarga:** Ve a la sección de **[Releases](https://github.com/WykosVx/NeawStreamV-player/releases)** y descarga el archivo NeawStream-V5.0.0.zip.
+1.**Descarga:** Ve a la sección de **[Releases](https://github.com/WykosVx/NeawStreamV-player/releases)** y descarga el archivo NeawStreamV-player.v-5.0.0.rar.
 
 2.**Descompresión:** Haz clic derecho sobre el archivo descargado.
 
