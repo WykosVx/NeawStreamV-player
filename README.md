@@ -25,8 +25,6 @@
 
 ## <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Telegram-Animated-Emojis/main/Travel%20and%20Places/Rocket.webp" alt="Rocket" width="25" height="25" /> Características
 
-* **Compatibilidad M3U:** Carga tus listas de reproducción favoritas de manera rápida.
-* **Contenido Xtream:** Soporte nativo para servicios basados en códigos Xtream.
 * **Optimizado:** Interfaz intuitiva, diseñada para funcionar perfectamente con mandos de TV y pantallas táctiles.
 * **Fluidez:** Bajo consumo de recursos y alta velocidad de carga.
 
