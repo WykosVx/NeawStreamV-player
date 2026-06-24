@@ -3,7 +3,6 @@
 <img src="app.png" width="200">
 </p>
 
-![Gif](assets/animation.gif)
 
 ![Version](https://img.shields.io/badge/version-5.0.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
@@ -60,3 +59,5 @@ Para comenzar a disfrutar de la aplicación, solo sigue estos sencillos pasos:
 
 ## <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Telegram-Animated-Emojis/main/Objects/File%20Folder.webp" alt="File Folder" width="25" height="25" /> License
 This project is under the **MIT License**. Check the [LICENSE](LICENSE) file for more details.
+
+![Gif](assets/animation.gif)
