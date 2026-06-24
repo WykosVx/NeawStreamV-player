@@ -216,6 +216,13 @@ class _PlayerScreenState extends State<PlayerScreen> {
                   ),
                 ],
               ),
+              const SizedBox(height: 10),
+              SizedBox(
+                width: 150,
+                height: 80,
+                child: Lottie.asset('assets/animations/wykos_animation.json', repeat: true),
+              ),
+
               const SizedBox(height: 20),
               Text(
                 "Cargando: ${widget.listaCanales[_indiceActual].nombre}",
