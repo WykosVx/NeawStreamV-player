@@ -11,6 +11,7 @@
 ![Android](https://img.shields.io/badge/Android-3DDC84?style=for-the-badge&logo=android&logoColor=white)
 ![Windows](https://img.shields.io/badge/Windows-0078D6?style=for-the-badge&logo=windows&logoColor=white)
 ![Android TV](https://img.shields.io/badge/Android%20TV-3DDC84?style=for-the-badge&logo=android&logoColor=white)
+![Sentry](https://img.shields.io/badge/Monitoring-Sentry-blueviolet?logo=sentry&logoColor=white)
 <p align="center">
   <img src="https://img.shields.io/github/repo-size/WykosVx/Brazilian-Dog-?style=for-the-badge&color=lightgrey" alt="Repo Size">
   <img src="https://img.shields.io/badge/Made%20in-Paraguay%20🇵🇾-white?style=for-the-badge" alt="Paraguay">
