@@ -35,6 +35,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
   late int _indiceActual = widget.indiceInicial;
   bool _isLoading = false;
   bool _isReconnecting = false;
+  bool _isDisposed = false; // Bandera de seguridad
   int _reintentos = 0;
   double _porcentaje = 0.0;
   String _datoCurioso = "";
@@ -63,7 +64,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
     int ticks = 0;
     _timer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
-      if (!mounted) {
+      if (_isDisposed || !mounted) {
         timer.cancel();
         return;
       }
@@ -86,6 +87,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
       await _player!.dispose();
       _player = null;
     }
+
+    if (_isDisposed) return;
 
     setState(() {
       _isLoading = true;
@@ -135,29 +138,31 @@ class _PlayerScreenState extends State<PlayerScreen> {
       Media(widget.listaCanales[_indiceActual].url, extras: {'force_stream': 'true'}),
     );
     _player!.play();
+
     Future.delayed(const Duration(seconds: 10), () {
-      if (mounted) {
-        setState(() => _isLoading = false);
-        _player!.seek(Duration.zero);
-        _player!.setVolume(100.0);
-        _player!.play();
-      }
+      if (_isDisposed || !mounted) return;
+      setState(() => _isLoading = false);
+      _player!.seek(Duration.zero);
+      _player!.setVolume(100.0);
+      _player!.play();
     });
 
     _player!.stream.buffering.listen((buffering) {
-      if (mounted && !_isLoading) {
+      if (_isDisposed) return;
+      if (!_isLoading) {
         _player!.setVolume(buffering ? 0.0 : 100.0);
       }
     });
 
     _player!.stream.error.listen((error) {
+      if (_isDisposed) return;
       debugPrint("Error detectado: $error");
       _manejarReconexion();
     });
   }
 
   Future<void> _manejarReconexion() async {
-    if (_isReconnecting) return;
+    if (_isReconnecting || _isDisposed) return;
     _isReconnecting = true;
     _reintentos++;
     if (_player != null) {
@@ -167,7 +172,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
     }
     int espera = (_reintentos * 3).clamp(3, 15);
     await Future.delayed(Duration(seconds: espera));
-    if (mounted) {
+    if (!_isDisposed && mounted) {
       _isReconnecting = false;
       _cargarCanal();
     }
@@ -184,6 +189,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
   @override
   void dispose() {
+    _isDisposed = true;
     _timer?.cancel();
     _player?.dispose();
     _focusNode.dispose();
@@ -222,7 +228,6 @@ class _PlayerScreenState extends State<PlayerScreen> {
                 height: 80,
                 child: Lottie.asset('assets/animations/wykos_animation.json', repeat: true),
               ),
-
               const SizedBox(height: 20),
               Text(
                 "Cargando: ${widget.listaCanales[_indiceActual].nombre}",
