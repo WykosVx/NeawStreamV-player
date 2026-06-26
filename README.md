@@ -25,9 +25,11 @@ Welcome to **NeawStreamV-player**! A multimedia solution developed in Flutter, d
 ¡Bienvenido a **NeawStreamV-player**! Una solución multimedia desarrollada en **Flutter**, diseñada para ofrecer una experiencia de reproducción fluida y eficiente tanto en **dispositivos móviles** como en **Android TV  y Windows**.
 
 ## <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Telegram-Animated-Emojis/main/People/Eyes.webp" alt="Eyes" width="25" height="25" />Disclaimer
-**"NeawStreamV-player" es un reproductor multimedia de propósito general. El software no contiene, proporciona, ni preinstala ningún tipo de lista de canales, contenido multimedia, o enlaces a fuentes externas. El usuario es el único responsable de la legalidad, propiedad y uso de los contenidos que decida cargar o reproducir mediante la aplicación. El autor no apoya ni fomenta el uso de material protegido por derechos de autor sin la debida licencia.**¡Gracias por usar NeawStreamV-player!
+**"NeawStreamV-player" es un reproductor multimedia de propósito general. El software no contiene, proporciona, ni preinstala ningún tipo de lista de canales, contenido multimedia, o enlaces a fuentes externas. El usuario es el único responsable de la legalidad, propiedad y uso de los contenidos que decida cargar o reproducir mediante la aplicación. El autor no apoya ni fomenta el uso de material protegido por derechos de autor sin la debida licencia.**
+¡Gracias por usar NeawStreamV-player!
 
-**"NeawStreamV-player" is a general-purpose multimedia player. The software does not contain, provide, or pre-install any channel lists, multimedia content, or links to external sources. The user is solely responsible for the legality, ownership, and use of the content they choose to load or play via the application. The author does not endorse or encourage the use of copyrighted material without the proper license.** Thank you for using NeawStreamV-player!
+**"NeawStreamV-player" is a general-purpose multimedia player. The software does not contain, provide, or pre-install any channel lists, multimedia content, or links to external sources. The user is solely responsible for the legality, ownership, and use of the content they choose to load or play via the application. The author does not endorse or encourage the use of copyrighted material without the proper license.** 
+¡Thank you for using NeawStreamV-player!
 
 ## <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Telegram-Animated-Emojis/main/Travel%20and%20Places/Rocket.webp" alt="Rocket" width="25" height="25" /> Características
 
