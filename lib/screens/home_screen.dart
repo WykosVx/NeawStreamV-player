@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'dart:io' show Platform;
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'models/canal_model.dart';
 import 'player_screen.dart';
 import 'settings_screen.dart';
 import 'package:flutter/services.dart';
 import '../app_settings.dart';
-import '../main.dart'; 
+import '../main.dart';
+
 // --- Gestor de Logs ---
 class LogManager {
   static final List<String> logs = [];
@@ -32,12 +37,75 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _mostrarLogs = false;
   bool _mostrarTeclado = false;
   bool _isTV = false;
+  bool _hayActualizacion = false;
+  String _urlDescarga = "";
 
   @override
   void initState() {
     super.initState();
     _cargarConfiguracion();
     _verificarAdvertencia();
+    _checkUpdate();
+  }
+
+  Future<void> _checkUpdate() async {
+    try {
+      final response = await http.get(Uri.parse('https://api.github.com/repos/WykosVx/NeawStreamV-player/releases/latest'));
+
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body);
+        String versionGithub = json['tag_name'];
+        _urlDescarga = json['html_url'];
+
+        PackageInfo packageInfo = await PackageInfo.fromPlatform();
+        String versionActual = packageInfo.version;
+
+        if (versionGithub != versionActual) {
+          if (mounted) setState(() => _hayActualizacion = true);
+        }
+      }
+    } catch (e) {
+      debugPrint("No se pudo verificar actualización: $e");
+    }
+  }
+
+  // --- Diálogo de confirmación ---
+  void _mostrarDialogoActualizacion() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("Actualización disponible"),
+        content: const Text("Se ha detectado una nueva versión de Neaw Stream. ¿Deseas descargarla ahora?"),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text("Luego")
+          ),
+          FilledButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                _iniciarDescarga();
+              },
+              child: const Text("Actualizar")
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _iniciarDescarga() async {
+    if (Platform.isAndroid) {
+      debugPrint("El usuario está en Android, redirigiendo a la descarga de APK...");
+    } else {
+      debugPrint("El usuario está en PC/TV, redirigiendo a la descarga de instalador...");
+    }
+
+
+    final Uri url = Uri.parse(_urlDescarga);
+
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    }
   }
 
   Future<void> _verificarAdvertencia() async {
@@ -52,7 +120,7 @@ class _HomeScreenState extends State<HomeScreen> {
             backgroundColor: Theme.of(context).colorScheme.surface,
             title: const Text("Aviso Legal"),
             content: const Text(
-              "Descargo de responsabilidad:NeawStreamVplayer no proporciona, aloja ni incluye ningún tipo de contenido multimedia. Es exclusivamente una herramienta de reproducción que permite a los usuarios reproducir su propio contenido legal (como listas M3U o códigos Xtream). No respaldamos ni facilitamos la transmisión de material protegido por derechos de autor sin la autorización de sus titulares.",
+              "Descargo de responsabilidad: NeawStreamVplayer no proporciona, aloja ni incluye contenido multimedia. Es una herramienta de reproducción para contenido legal.",
             ),
             actions: [
               TextButton(
@@ -132,6 +200,12 @@ class _HomeScreenState extends State<HomeScreen> {
             backgroundColor: theme.colorScheme.surface,
             title: const Text("Neaw Stream"),
             actions: [
+              if (_hayActualizacion)
+                IconButton(
+                  icon: const Icon(Icons.cloud_download, color: Colors.greenAccent),
+                  tooltip: "Nueva versión disponible 😎",
+                  onPressed: _mostrarDialogoActualizacion,
+                ),
               IconButton(
                 icon: Icon(Icons.bug_report, color: _mostrarLogs ? accentColor : theme.colorScheme.onSurface),
                 onPressed: () => setState(() => _mostrarLogs = !_mostrarLogs),
