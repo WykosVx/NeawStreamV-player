@@ -1,12 +1,13 @@
 name: neawstreamvplayer
 description: "A new Flutter project."
 publish_to: 'none'
-version: 1.0.0+1
+version: 7.0.0
 
 environment:
   sdk: ^3.11.5
 
 dependencies:
+  sentry_flutter: ^9.22.0
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.8
@@ -29,8 +30,11 @@ dependencies:
   url_launcher: ^6.3.0
   media_kit_libs_android_video: ^1.3.8
   flutter_displaymode: ^0.7.0
+  package_info_plus: 10.1.0
+
 
 dev_dependencies:
+  sentry_dart_plugin: ^3.4.0
   flutter_test:
     sdk: flutter
   flutter_launcher_icons: "^0.14.1"
@@ -48,3 +52,8 @@ flutter_launcher_icons:
   ios: true
   image_path: "assets/images/app_icon.png"
   min_sdk_android: 21
+sentry:
+  upload_debug_symbols: true
+  upload_source_maps: true
+  project: flutter
+  org: wykoscorporation
