@@ -36,7 +36,7 @@ Welcome to **NeawStreamV-player**! A multimedia solution developed in Flutter, d
 * **Optimizado:** Interfaz intuitiva, diseñada para funcionar perfectamente con mandos de TV y pantallas táctiles.
 * **Fluidez:** Bajo consumo de recursos y alta velocidad de carga.
 
-## <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Telegram-Animated-Emojis/main/Objects/Mobile%20Phone.webp" alt="Mobile Phone" width="25" height="25" /> Capturas de pantalla
+## <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Telegram-Animated-Emojis/main/Objects/Mobile%20Phone.webp" alt="Mobile Phone" width="25" height="25" /> Capturas de pantalla/Screenshots
 
 <div align="center">
 
@@ -46,7 +46,7 @@ Welcome to **NeawStreamV-player**! A multimedia solution developed in Flutter, d
 
 </div>
 
-### <img src="assets/windows_logo.png" width="15">  Instalación Windows
+### <img src="assets/windows_logo.png" width="15">  Instalación Windows/Windows Installation
 
 Para comenzar a disfrutar de la aplicación, solo sigue estos sencillos pasos:
 
