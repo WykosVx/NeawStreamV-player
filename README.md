@@ -15,7 +15,7 @@
   <img src="https://img.shields.io/badge/Made%20in-Paraguay%20🇵🇾-white?style=for-the-badge" alt="Paraguay">
   <img src="https://img.shields.io/github/issues-closed/WykosVx/Brazilian-Dog-?style=for-the-badge&color=lightgrey" alt="Issues Closed">
   
-  ![Version](https://img.shields.io/badge/version-5.0.0-blue)
+  ![Version](https://img.shields.io/badge/version-7.0.0-red)
   ![License](https://img.shields.io/badge/license-MIT-green)
   ![Sentry](https://img.shields.io/badge/Monitoring-Sentry-blueviolet?logo=sentry&logoColor=white)
 </p>
