@@ -1,22 +1,29 @@
-# <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Telegram-Animated-Emojis/main/Objects/Television.webp" alt="Television" width="25" height="25" /> NeawStreamV-player
-<p align="center">
-<img src="app.png" width="200">
-</p>
+<img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Telegram-Animated-Emojis/main/Objects/Television.webp" alt="Television" width="25" height="25" /> NeawStreamV-player
 
-<p align="center">
-  
-![Flutter](https://img.shields.io/badge/Flutter-02569B?style=for-the-badge&logo=flutter&logoColor=white)
-![Dart](https://img.shields.io/badge/Dart-0175C2?style=for-the-badge&logo=dart&logoColor=white)
-![Android](https://img.shields.io/badge/Android-3DDC84?style=for-the-badge&logo=android&logoColor=white)
-![Windows](https://img.shields.io/badge/Windows-0078D6?style=for-the-badge&logo=windows&logoColor=white)
-  
+<div align="center">
+  <!-- ==================== SECCIÓN DE IMÁGENES ==================== -->
+  <table border="0">
+    <tr>
+      <td align="center" valign="middle">
+        <img src="app.png" width="200" alt="App Preview">
+      </td>
+  </table>
+
+  <br>
+
+  <!-- ==================== INFORMACIÓN Y ESTADO ==================== -->
   <img src="https://img.shields.io/github/repo-size/WykosVx/Brazilian-Dog-?style=for-the-badge&color=lightgrey" alt="Repo Size">
-  <img src="https://img.shields.io/badge/Made%20in-Paraguay%20🇵🇾-white?style=for-the-badge" alt="Paraguay">
   <img src="https://img.shields.io/github/issues-closed/WykosVx/Brazilian-Dog-?style=for-the-badge&color=lightgrey" alt="Issues Closed">
-  
-  ![Version](https://img.shields.io/badge/version-7.0.0-red)
-  ![License](https://img.shields.io/badge/license-MIT-green)
-</p>
+  <img src="https://img.shields.io/badge/Made%20in-Paraguay%20🇵🇾-white?style=for-the-badge" alt="Paraguay">
+
+  <br><br>
+
+  <!-- ==================== TECNOLOGÍAS USADAS ==================== -->
+  <img src="https://img.shields.io/badge/Flutter-02569B?style=for-the-badge&logo=flutter&logoColor=white" alt="Flutter">
+  <img src="https://img.shields.io/badge/Dart-0175C2?style=for-the-badge&logo=dart&logoColor=white" alt="Dart">
+  <img src="https://img.shields.io/badge/Android-3DDC84?style=for-the-badge&logo=android&logoColor=white" alt="Android">
+  <img src="https://img.shields.io/badge/Windows-0078D6?style=for-the-badge&logo=windows&logoColor=white" alt="Windows">
+</div>
 
 Welcome to **NeawStreamV-player**! A multimedia solution developed in Flutter, designed to offer a smooth and efficient playback experience on mobile devices, Android TV, and Windows.
 
