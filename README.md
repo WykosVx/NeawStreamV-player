@@ -3,12 +3,13 @@
 <img src="app.png" width="200">
 </p>
 
+<p align="center">
+  
 ![Flutter](https://img.shields.io/badge/Flutter-02569B?style=for-the-badge&logo=flutter&logoColor=white)
 ![Dart](https://img.shields.io/badge/Dart-0175C2?style=for-the-badge&logo=dart&logoColor=white)
 ![Android](https://img.shields.io/badge/Android-3DDC84?style=for-the-badge&logo=android&logoColor=white)
 ![Windows](https://img.shields.io/badge/Windows-0078D6?style=for-the-badge&logo=windows&logoColor=white)
   
-<p align="center">
   <img src="https://img.shields.io/github/repo-size/WykosVx/Brazilian-Dog-?style=for-the-badge&color=lightgrey" alt="Repo Size">
   <img src="https://img.shields.io/badge/Made%20in-Paraguay%20🇵🇾-white?style=for-the-badge" alt="Paraguay">
   <img src="https://img.shields.io/github/issues-closed/WykosVx/Brazilian-Dog-?style=for-the-badge&color=lightgrey" alt="Issues Closed">
