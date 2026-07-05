@@ -1,12 +1,10 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:lottie/lottie.dart';
-import '../app_settings.dart';
 import 'models/canal_model.dart';
 
 class PlayerScreen extends StatefulWidget {
@@ -31,15 +29,14 @@ class _PlayerScreenState extends State<PlayerScreen> {
   Player? _player;
   VideoController? _controller;
   final FocusNode _focusNode = FocusNode();
+  StreamSubscription? _bufferSubscription;
 
   late int _indiceActual = widget.indiceInicial;
   bool _isLoading = false;
+  bool _isDisposed = false;
   bool _isReconnecting = false;
-  bool _isDisposed = false; // Bandera de seguridad
+  double _progresoBuffer = 0.0;
   int _reintentos = 0;
-  double _porcentaje = 0.0;
-  String _datoCurioso = "";
-  Timer? _timer;
 
   @override
   void initState() {
@@ -47,38 +44,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
     if (widget.isTV) {
       SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
     }
-    _inicializarCarga();
     _cargarCanal();
-  }
-
-  Future<void> _inicializarCarga() async {
-    List<dynamic> lista = [];
-    try {
-      String jsonString = await rootBundle.loadString('assets/datos_curiosos.json');
-      lista = jsonDecode(jsonString);
-      lista.shuffle();
-    } catch (e) {
-      debugPrint("Error cargando datos locales: $e");
-      lista = ["Bienvenido a Neaw Stream", "Disfruta de la mejor calidad"];
-    }
-
-    int ticks = 0;
-    _timer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
-      if (_isDisposed || !mounted) {
-        timer.cancel();
-        return;
-      }
-      setState(() {
-        ticks++;
-        if (_porcentaje < 0.99) _porcentaje += 0.01;
-        if (lista.isNotEmpty) {
-          if (ticks < 50) _datoCurioso = lista[0 % lista.length];
-          else if (ticks < 100) _datoCurioso = lista[1 % lista.length];
-          else _datoCurioso = "";
-        }
-        if (_porcentaje >= 0.99) timer.cancel();
-      });
-    });
   }
 
   Future<void> _cargarCanal() async {
@@ -87,12 +53,13 @@ class _PlayerScreenState extends State<PlayerScreen> {
       await _player!.dispose();
       _player = null;
     }
+    _bufferSubscription?.cancel();
 
     if (_isDisposed) return;
 
     setState(() {
       _isLoading = true;
-      _porcentaje = 0.0;
+      _progresoBuffer = 0.0;
     });
 
     final prefs = await SharedPreferences.getInstance();
@@ -103,79 +70,53 @@ class _PlayerScreenState extends State<PlayerScreen> {
     _controller = VideoController(_player!);
 
     final platform = _player!.platform as dynamic;
-    platform.setProperty('interpolation', 'no');
-    platform.setProperty('video-sync', 'audio-adrop');
-    platform.setProperty('framedrop', 'decoder');
-    platform.setProperty('cache', 'yes');
-    platform.setProperty('cache-secs', '60');
-    platform.setProperty('cache-initial', '5000');
-    platform.setProperty('live-cache', '10');
-    platform.setProperty('cache-pause', 'no');
-    platform.setProperty('cache-pause-initial', 'yes');
-    platform.setProperty('cache-backbuffer', '50');
-    platform.setProperty('demuxer-readahead-secs', '10');
-    platform.setProperty('tscale', 'oversample');
-    platform.setProperty('vd-lavc-dr', 'yes');
-    platform.setProperty('vd-lavc-fast', 'yes');
-    platform.setProperty('vd-lavc-threads', '8');
     platform.setProperty('hwdec', 'mediacodec');
-    platform.setProperty('demuxer-max-bytes', '256MiB');
-    platform.setProperty('demuxer-max-back-bytes', '64MiB');
-    platform.setProperty('audio-channels', 'stereo');
-    platform.setProperty('ad-lavc-ac3drc', '0');
-    platform.setProperty('hr-seek', 'yes');
-    platform.setProperty('reconnect-stream', 'yes');
-    platform.setProperty('reconnect-on-network-error', 'yes');
-    platform.setProperty('reconnect-on-http-error', 'yes');
-    platform.setProperty('force-window', 'immediate');
-    platform.setProperty('network-timeout', '10');
+    platform.setProperty('hwdec-codecs', 'h264,hevc,vp9');
+    platform.setProperty('video-sync', 'display-adrop');
+    platform.setProperty('opengl-pbo', 'no');
     platform.setProperty('vd-lavc-threads', '0');
-    platform.setProperty('reconnect-delay-max', '2');
+    platform.setProperty('video-sync', 'display-resample');
+    platform.setProperty('vsync', 'yes');
+    platform.setProperty('swapinterval', '1');
+    platform.setProperty('interpolation', 'yes');
+    platform.setProperty('tscale', 'oversample');
+    platform.setProperty('framedrop', 'decoder');
+    platform.setProperty('vd-lavc-dr', 'yes');
+    platform.setProperty('cache', 'yes');
+    platform.setProperty('cache-initial', '5000');
+    platform.setProperty('cache-secs', '30');
+    platform.setProperty('demuxer-max-bytes', '128MiB');
+    platform.setProperty('demuxer-max-back-bytes', '32MiB');
+    platform.setProperty('reconnect-stream', 'yes');
+    platform.setProperty('network-timeout', '10');
+    platform.setProperty('hr-seek', 'yes');
 
     _player!.setVolume(0.0);
 
-    await _player!.open(
-      Media(widget.listaCanales[_indiceActual].url, extras: {'force_stream': 'true'}),
-    );
-    _player!.play();
+    _bufferSubscription = _player!.stream.buffer.listen((buffer) {
+      if (_isDisposed || !_isLoading) return;
 
-    Future.delayed(const Duration(seconds: 10), () {
-      if (_isDisposed || !mounted) return;
-      setState(() => _isLoading = false);
-      _player!.seek(Duration.zero);
-      _player!.setVolume(100.0);
-      _player!.play();
-    });
+      double duracionMs = buffer.inMilliseconds.toDouble();
+      double metaMs = 10000.0;
 
-    _player!.stream.buffering.listen((buffering) {
-      if (_isDisposed) return;
-      if (!_isLoading) {
-        _player!.setVolume(buffering ? 0.0 : 100.0);
+      setState(() {
+        _progresoBuffer = (duracionMs / metaMs).clamp(0.0, 1.0);
+      });
+
+      if (duracionMs >= metaMs) {
+        _bufferSubscription?.cancel();
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+            _player!.setVolume(100.0);
+            _player!.seek(Duration.zero);
+            _player!.play();
+          });
+        }
       }
     });
 
-    _player!.stream.error.listen((error) {
-      if (_isDisposed) return;
-      debugPrint("Error detectado: $error");
-      _manejarReconexion();
-    });
-  }
-
-  Future<void> _manejarReconexion() async {
-    if (_isReconnecting || _isDisposed) return;
-    _isReconnecting = true;
-    _reintentos++;
-    if (_player != null) {
-      await _player!.stop();
-      await _player!.dispose();
-      _player = null;
-    }
-    int espera = (_reintentos * 3).clamp(3, 15);
-    await Future.delayed(Duration(seconds: espera));
-    if (!_isDisposed && mounted) {
-      _isReconnecting = false;
-      _cargarCanal();
-    }
+    await _player!.open(Media(widget.listaCanales[_indiceActual].url));
   }
 
   void _cambiarCanal(int direccion) {
@@ -190,7 +131,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
   @override
   void dispose() {
     _isDisposed = true;
-    _timer?.cancel();
+    _bufferSubscription?.cancel();
     _player?.dispose();
     _focusNode.dispose();
     if (widget.isTV) {
@@ -203,49 +144,17 @@ class _PlayerScreenState extends State<PlayerScreen> {
   Widget build(BuildContext context) {
     if (_isLoading) {
       return Scaffold(
-        backgroundColor: Theme.of(context).colorScheme.surface,
+        backgroundColor: Colors.black,
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Stack(
-                alignment: Alignment.center,
-                children: [
-                  SizedBox(
-                    width: 200,
-                    height: 200,
-                    child: Lottie.asset('assets/animations/Loading Cat.json', repeat: true),
-                  ),
-                  Text(
-                    "${(_porcentaje * 100).toInt()}%",
-                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              SizedBox(
-                width: 150,
-                height: 80,
-                child: Lottie.asset('assets/animations/wykos_animation.json', repeat: true),
-              ),
+              CircularProgressIndicator(value: _progresoBuffer),
               const SizedBox(height: 20),
-              Text(
-                "Cargando: ${widget.listaCanales[_indiceActual].nombre}",
-                style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 16),
-                textAlign: TextAlign.center,
-              ),
+              SizedBox(width: 150, height: 80, child: Lottie.asset('assets/animations/wykos_animation.json')),
               const SizedBox(height: 10),
-              SizedBox(
-                height: 60,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                  child: Text(
-                    _datoCurioso,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Theme.of(context).colorScheme.primary, fontStyle: FontStyle.italic),
-                  ),
-                ),
-              ),
+              Text("Cargando: ${widget.listaCanales[_indiceActual].nombre}", style: const TextStyle(color: Colors.white)),
+              Text("${(_progresoBuffer * 100).toInt()}%", style: const TextStyle(color: Colors.white54)),
             ],
           ),
         ),
@@ -275,8 +184,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
       },
       child: Scaffold(
         backgroundColor: Colors.black,
-        body: Center(
-          child: Video(controller: _controller!, fit: BoxFit.contain),
+        body: Video(
+          controller: _controller!,
+          fit: BoxFit.contain,
         ),
       ),
     );
