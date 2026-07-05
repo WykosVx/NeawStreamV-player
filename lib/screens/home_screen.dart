@@ -1,24 +1,42 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'dart:io' show Platform;
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/foundation.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'models/canal_model.dart';
 import 'player_screen.dart';
 import 'settings_screen.dart';
-import 'package:flutter/services.dart';
 import '../app_settings.dart';
 import '../main.dart';
 
-// --- Gestor de Logs ---
+// --- Funciones ---
+List<Canal> _parsearLista(String body) {
+  List<String> lineas = body.split('\n');
+  List<Canal> listaTemporal = [];
+  String? nombre, logo;
+  for (var linea in lineas) {
+    linea = linea.trim();
+    if (linea.startsWith("#EXTINF")) {
+      nombre = linea.split(',').last.trim();
+      var match = RegExp(r'tvg-logo="([^"]+)"').firstMatch(linea);
+      logo = match != null ? match.group(1) : "";
+    } else if (linea.isNotEmpty && !linea.startsWith("#") && nombre != null) {
+      listaTemporal.add(Canal(nombre: nombre, url: linea, logoUrl: logo ?? ""));
+      nombre = null; logo = null;
+    }
+  }
+  return listaTemporal;
+}
+
 class LogManager {
   static final List<String> logs = [];
   static final ValueNotifier<int> logNotifier = ValueNotifier(0);
   static void add(String message) {
-    String time = "${DateTime.now().hour}:${DateTime.now().minute}:${DateTime.now().second}";
-    logs.add("$time - $message");
+    logs.add("${DateTime.now().hour}:${DateTime.now().minute} - $message");
     if (logs.length > 50) logs.removeAt(0);
     logNotifier.value++;
   }
@@ -32,10 +50,18 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _urlController = TextEditingController();
-  final List<Canal> canales = [];
+  final TextEditingController _busquedaController = TextEditingController();
+  final List<Canal> _canalesCompletos = [];
+  final List<Canal> _canalesMostrar = [];
+  final ScrollController _scrollController = ScrollController();
+  final int _itemsPorPagina = 50;
+  final FocusNode _urlFocusNode = FocusNode();
+  final FocusNode _busquedaFocusNode = FocusNode();
+
   bool _cargando = false;
   bool _mostrarLogs = false;
   bool _mostrarTeclado = false;
+  bool _buscando = false;
   bool _isTV = false;
   bool _hayActualizacion = false;
   String _urlDescarga = "";
@@ -43,104 +69,80 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _cargarConfiguracion();
-    _verificarAdvertencia();
-    _checkUpdate();
-  }
-
-  Future<void> _checkUpdate() async {
-    try {
-      final response = await http.get(Uri.parse('https://api.github.com/repos/WykosVx/NeawStreamV-player/releases/latest'));
-
-      if (response.statusCode == 200) {
-        final json = jsonDecode(response.body);
-        String versionGithub = json['tag_name'];
-        _urlDescarga = json['html_url'];
-
-        PackageInfo packageInfo = await PackageInfo.fromPlatform();
-        String versionActual = packageInfo.version;
-
-        if (versionGithub != versionActual) {
-          if (mounted) setState(() => _hayActualizacion = true);
-        }
-      }
-    } catch (e) {
-      debugPrint("No se pudo verificar actualización: $e");
-    }
-  }
-
-  // --- Diálogo de confirmación ---
-  void _mostrarDialogoActualizacion() {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text("Actualización disponible"),
-        content: const Text("Se ha detectado una nueva versión de Neaw Stream. ¿Deseas descargarla ahora?"),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text("Luego")
-          ),
-          FilledButton(
-              onPressed: () {
-                Navigator.pop(ctx);
-                _iniciarDescarga();
-              },
-              child: const Text("Actualizar")
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _iniciarDescarga() async {
-    if (Platform.isAndroid) {
-      debugPrint("El usuario está en Android, redirigiendo a la descarga de APK...");
-    } else {
-      debugPrint("El usuario está en PC/TV, redirigiendo a la descarga de instalador...");
-    }
-
-
-    final Uri url = Uri.parse(_urlDescarga);
-
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url, mode: LaunchMode.externalApplication);
-    }
-  }
-
-  Future<void> _verificarAdvertencia() async {
-    final prefs = await SharedPreferences.getInstance();
-    bool yaMostro = prefs.getBool('yaMostroAdvertencia') ?? false;
-    if (!yaMostro) {
-      if (mounted) {
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (ctx) => AlertDialog(
-            backgroundColor: Theme.of(context).colorScheme.surface,
-            title: const Text("Aviso Legal"),
-            content: const Text(
-              "Descargo de responsabilidad: NeawStreamVplayer no proporciona, aloja ni incluye contenido multimedia. Es una herramienta de reproducción para contenido legal.",
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  prefs.setBool('yaMostroAdvertencia', true);
-                  Navigator.pop(ctx);
-                },
-                child: const Text("Aceptar"),
-              )
-            ],
-          ),
-        );
-      }
-    }
+    _scrollController.addListener(_onScroll);
+    _inicializarApp();
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     setState(() => _isTV = MediaQuery.of(context).size.width > 800);
+  }
+
+  void _activarTeclado(bool esBusqueda) {
+    setState(() {
+      _buscando = esBusqueda;
+      _mostrarTeclado = true;
+    });
+  }
+
+  Future<void> _inicializarApp() async {
+    await _cargarConfiguracion();
+    _checkUpdate();
+    if (_urlController.text.isNotEmpty) _procesarURL(_urlController.text);
+  }
+
+  void _mostrarDialogoActualizacion() {
+    showDialog(context: context, builder: (ctx) => AlertDialog(
+      title: const Text("Actualización"),
+      content: const Text("Hay una nueva versión disponible."),
+      actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cerrar")), FilledButton(onPressed: () => launchUrl(Uri.parse(_urlDescarga)), child: const Text("Descargar"))],
+    ));
+  }
+
+  Future<void> _checkUpdate() async {
+    try {
+      final response = await http.get(Uri.parse('https://api.github.com/repos/WykosVx/NeawStreamV-player/releases/latest'));
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body);
+        _urlDescarga = json['html_url'];
+        PackageInfo packageInfo = await PackageInfo.fromPlatform();
+        if (json['tag_name'] != packageInfo.version && mounted) setState(() => _hayActualizacion = true);
+      }
+    } catch (e) { LogManager.add("Error update: $e"); }
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 500) _cargarMas();
+  }
+
+  void _cargarMas() {
+    if (_canalesMostrar.length < _canalesCompletos.length && !_cargando) {
+      int inicio = _canalesMostrar.length;
+      int fin = (inicio + _itemsPorPagina > _canalesCompletos.length) ? _canalesCompletos.length : inicio + _itemsPorPagina;
+      setState(() => _canalesMostrar.addAll(_canalesCompletos.sublist(inicio, fin)));
+    }
+  }
+
+  Future<void> _procesarURL(String url) async {
+    if (url.isEmpty) return;
+    setState(() => _cargando = true);
+    LogManager.add("Descargando: $url");
+    try {
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        final lista = await compute(_parsearLista, response.body);
+        LogManager.add("Canales cargados: ${lista.length}");
+        setState(() {
+          _canalesCompletos.clear(); _canalesCompletos.addAll(lista);
+          _canalesMostrar.clear(); _canalesMostrar.addAll(_canalesCompletos.take(_itemsPorPagina));
+        });
+      } else {
+        LogManager.add("Error servidor: ${response.statusCode}");
+      }
+    } catch (e) {
+      LogManager.add("Error: $e");
+    } finally { setState(() => _cargando = false); }
   }
 
   Future<void> _cargarConfiguracion() async {
@@ -152,173 +154,210 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  Future<void> _procesarURL(String url) async {
-    if (url.isEmpty) return;
-    setState(() => _cargando = true);
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('user_url', url);
-    LogManager.add("Descargando: $url");
-    try {
-      final response = await http.get(Uri.parse(url));
-      if (response.statusCode == 200) {
-        List<String> lineas = response.body.split('\n');
-        List<Canal> listaTemporal = [];
-        String? nombre, logo;
-        for (var linea in lineas) {
-          linea = linea.trim();
-          if (linea.startsWith("#EXTINF")) {
-            nombre = linea.split(',').last.trim();
-            var match = RegExp(r'tvg-logo="([^"]+)"').firstMatch(linea);
-            logo = match != null ? match.group(1) : "";
-          } else if (linea.isNotEmpty && !linea.startsWith("#") && nombre != null) {
-            listaTemporal.add(Canal(nombre: nombre, url: linea, logoUrl: logo ?? ""));
-            nombre = null; logo = null;
-          }
-        }
-        setState(() {
-          canales.clear();
-          canales.addAll(listaTemporal);
-        });
-        LogManager.add("Canales cargados: ${canales.length}");
-      }
-    } catch (e) {
-      LogManager.add("Error: $e");
-    } finally {
-      setState(() => _cargando = false);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<Color>(
-      valueListenable: globalAccentColor,
-      builder: (context, accentColor, _) {
-        final theme = Theme.of(context);
-        return Scaffold(
-          backgroundColor: theme.colorScheme.surface,
-          appBar: AppBar(
-            backgroundColor: theme.colorScheme.surface,
-            title: const Text("Neaw Stream"),
-            actions: [
-              if (_hayActualizacion)
-                IconButton(
-                  icon: const Icon(Icons.cloud_download, color: Colors.greenAccent),
-                  tooltip: "Nueva versión disponible 😎",
-                  onPressed: _mostrarDialogoActualizacion,
-                ),
-              IconButton(
-                icon: Icon(Icons.bug_report, color: _mostrarLogs ? accentColor : theme.colorScheme.onSurface),
-                onPressed: () => setState(() => _mostrarLogs = !_mostrarLogs),
-              ),
-              IconButton(
-                icon: const Icon(Icons.settings),
-                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => SettingsScreen()))
-                    .then((_) => _cargarConfiguracion()),
-              ),
-            ],
-          ),
-          body: Stack(
+    return ValueListenableBuilder<Color>(valueListenable: globalAccentColor, builder: (context, accentColor, _) {
+      return Scaffold(
+        appBar: AppBar(title: const Text("Neaw Stream"), actions: [
+          IconButton(icon: Icon(Icons.search, color: _buscando ? accentColor : null), onPressed: () => setState(() => _buscando = !_buscando)),
+          if (_hayActualizacion) IconButton(icon: const Icon(Icons.cloud_download, color: Colors.greenAccent), onPressed: _mostrarDialogoActualizacion),
+          IconButton(icon: Icon(Icons.bug_report, color: _mostrarLogs ? accentColor : null), onPressed: () => setState(() => _mostrarLogs = !_mostrarLogs)),
+          IconButton(icon: const Icon(Icons.settings), onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => SettingsScreen())).then((_) => _cargarConfiguracion())),
+        ]),
+        body: Stack(
             children: [
               Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(12.0),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: InkWell(
-                            onTap: () => setState(() => _mostrarTeclado = true),
-                            child: IgnorePointer(
-                              ignoring: _isTV,
-                              child: TextField(
-                                controller: _urlController,
-                                decoration: InputDecoration(
-                                  hintText: "URL...",
-                                  filled: true,
-                                  fillColor: theme.colorScheme.surfaceContainerHighest,
-                                  border: const OutlineInputBorder(),
+                  children: [
+                    Padding(
+                        padding: const EdgeInsets.all(12.0),
+                        child: Row(
+                            children: [
+                              Expanded(
+                                child: _isTV
+                                    ? InkWell(
+                                  onTap: () => setState(() {
+                                    _buscando = false;
+                                    _mostrarTeclado = true;
+                                  }),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 15),
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                      borderRadius: BorderRadius.circular(4),
+                                      border: Border.all(color: Colors.grey),
+                                    ),
+                                    child: Text(
+                                      _urlController.text.isEmpty ? "URL..." : _urlController.text,
+                                      style: const TextStyle(fontSize: 16),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                )
+                                    : TextField(
+                                  controller: _urlController,
+                                  focusNode: _urlFocusNode,
+                                  readOnly: _isTV,
+                                  showCursor: !_isTV,
+                                  decoration: InputDecoration(
+                                    hintText: "URL...",
+                                    filled: true,
+                                    fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                    border: const OutlineInputBorder(),
+                                  ),
+                                ),
+                              ),
+              IconButton(icon: Icon(Icons.download, color: accentColor), onPressed: () => _procesarURL(_urlController.text)),
+            ])),
+                    if (_buscando)
+                      Padding(
+                          padding: const EdgeInsets.all(12.0),
+                          child: Row(
+                              children: [
+                                Expanded(
+                                  child: _isTV
+                                      ? InkWell(
+                                    onTap: () => setState(() => _mostrarTeclado = true),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 15),
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                        borderRadius: BorderRadius.circular(4),
+                                        border: Border.all(color: Colors.grey),
+                                      ),
+                                      child: Text(
+                                        _busquedaController.text.isEmpty ? "Buscar..." : _busquedaController.text,
+                                        style: const TextStyle(fontSize: 16),
+                                      ),
+                                    ),
+                                  )
+                                      : TextField(
+                                    controller: _busquedaController,
+                                    decoration: const InputDecoration(hintText: "Buscar...", filled: true),
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.check, color: Colors.green),
+                                  onPressed: () {
+                                    setState(() {
+                                      _canalesMostrar.clear();
+                                      _canalesMostrar.addAll(_canalesCompletos.where((c) =>
+                                          c.nombre.toLowerCase().contains(_busquedaController.text.toLowerCase())));
+                                      _mostrarTeclado = false;
+                                    });
+                                  },
+                                ),
+                              ],
+                          ),
+                      ),
+                    Expanded(
+                      child: GridView.builder(
+                        controller: _scrollController,
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: MediaQuery.of(context).size.width < 600 ? 4 : 10,
+                        ),
+                        itemCount: _canalesMostrar.length,
+                        itemBuilder: (context, i) {
+                          final canal = _canalesMostrar[i];
+                          return InkWell(
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => PlayerScreen(
+                                  listaCanales: _canalesCompletos,
+                                  indiceInicial: i,
+                                  titulo: canal.nombre,
+                                  isTV: true,
                                 ),
                               ),
                             ),
-                          ),
-                        ),
-                        IconButton(
-                          icon: Icon(Icons.download, size: 40, color: accentColor),
-                          onPressed: () => _procesarURL(_urlController.text),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    child: GridView.builder(
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 5),
-                      itemCount: canales.length,
-                      itemBuilder: (context, i) {
-                        final canal = canales[i];
-                        return InkWell(
-                          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => PlayerScreen(listaCanales: canales, indiceInicial: i, titulo: canal.nombre, isTV: true))),
-                          child: Card(
-                            color: theme.colorScheme.surfaceContainer,
-                            clipBehavior: Clip.antiAlias,
-                            child: Stack(children: [
-                              if (canal.logoUrl.isNotEmpty) Positioned.fill(child: Opacity(opacity: 0.3, child: Image.network(canal.logoUrl, fit: BoxFit.cover))),
-                              Center(
-                                child: Text(canal.nombre, textAlign: TextAlign.center, style: TextStyle(color: theme.colorScheme.onSurface, fontWeight: FontWeight.bold)),
+                            child: Card(
+                              color: Theme.of(context).colorScheme.surfaceContainer,
+                              clipBehavior: Clip.antiAlias,
+                              child: Stack(
+                                children: [
+                                  if (canal.logoUrl.isNotEmpty)
+                                    Positioned.fill(
+                                      child: Opacity(
+                                        opacity: 0.3,
+                                        child: CachedNetworkImage(
+                                          imageUrl: canal.logoUrl,
+                                          fit: BoxFit.cover,
+                                        ),
+                                      ),
+                                    ),
+                                  Center(
+                                    child: Text(
+                                      canal.nombre,
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        color: Theme.of(context).colorScheme.onSurface,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ]),
-                          ),
-                        );
-                      },
+                            ),
+                          );
+                        },
+                      ),
                     ),
-                  ),
-                ],
+                  ],
               ),
               if (_mostrarLogs)
                 Positioned(
-                  bottom: 20, right: 20, width: 250, height: 200,
+                  bottom: 20,
+                  right: 20,
+                  width: 250,
+                  height: 200,
                   child: Container(
-                    color: theme.colorScheme.surface.withOpacity(0.9),
-                    child: ValueListenableBuilder<int>(
-                      valueListenable: LogManager.logNotifier,
-                      builder: (_, __, ___) => ListView.builder(
-                        itemCount: LogManager.logs.length,
-                        itemBuilder: (_, i) => Text(LogManager.logs[i], style: TextStyle(color: accentColor, fontSize: 9)),
+                    color: Colors.black.withOpacity(0.8),
+                    child: ListView.builder(
+                      itemCount: LogManager.logs.length,
+                      itemBuilder: (_, i) => Text(
+                        LogManager.logs[i],
+                        style: const TextStyle(color: Colors.green, fontSize: 9),
                       ),
                     ),
                   ),
                 ),
               if (_mostrarTeclado)
                 Positioned(
-                  bottom: 0, left: 0, right: 0,
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
                   child: TecladoTV(
                     accentColor: accentColor,
                     onCerrar: () => setState(() => _mostrarTeclado = false),
                     onTecla: (t) => setState(() {
+                      var ctrl = _buscando ? _busquedaController : _urlController;
                       if (t == "Borrar") {
-                        if (_urlController.text.isNotEmpty) _urlController.text = _urlController.text.substring(0, _urlController.text.length - 1);
+                        if (ctrl.text.isNotEmpty) ctrl.text = ctrl.text.substring(0, ctrl.text.length - 1);
                       } else if (t == "Espacio") {
-                        _urlController.text += " ";
+                        ctrl.text += " ";
                       } else if (t != "Cerrar") {
-                        _urlController.text += t;
+                        ctrl.text += t;
                       }
                     }),
                   ),
                 ),
             ],
-          ),
-        );
-      },
+        ),
+      );
+    },
     );
   }
 }
-
 class TecladoTV extends StatelessWidget {
   final Function(String) onTecla;
   final VoidCallback onCerrar;
   final Color accentColor;
-  TecladoTV({super.key, required this.onTecla, required this.onCerrar, required this.accentColor});
 
-  final List<List<String>> filas = [
+  const TecladoTV(
+      {super.key, required this.onTecla, required this.onCerrar, required this.accentColor});
+
+  final List<List<String>> filas = const [
     ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'],
     ['q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p'],
     ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ':'],
@@ -332,41 +371,50 @@ class TecladoTV extends StatelessWidget {
       color: Colors.black.withOpacity(0.95),
       padding: const EdgeInsets.all(10),
       child: FocusTraversalGroup(
+        policy: OrderedTraversalPolicy(),
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          children: filas.map((fila) {
-            return Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: fila.map((tecla) {
-                return Focus(
-                  canRequestFocus: true,
-                  onKey: (node, event) {
-                    if (event is RawKeyDownEvent && (event.logicalKey.keyLabel == "Select" || event.logicalKey.keyLabel == "Enter")) {
-                      tecla == 'Cerrar' ? onCerrar() : onTecla(tecla);
-                      return KeyEventResult.handled;
-                    }
-                    return KeyEventResult.ignored;
-                  },
-                  child: Builder(builder: (ctx) {
-                    bool focused = Focus.of(ctx).hasFocus;
-                    return InkWell(
-                      onTap: () => tecla == 'Cerrar' ? onCerrar() : onTecla(tecla),
-                      child: Container(
-                        margin: const EdgeInsets.all(4),
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                        decoration: BoxDecoration(
-                          color: focused ? accentColor : Colors.grey[900],
-                          border: Border.all(color: focused ? Colors.white : Colors.grey[800]!),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(tecla, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                      ),
-                    );
-                  }),
-                );
-              }).toList(),
-            );
-          }).toList(),
+          children: filas.map((fila) =>
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: fila.map((tecla) =>
+                    Focus(
+                      canRequestFocus: true,
+                      onKey: (node, event) {
+                        if (event is RawKeyDownEvent &&
+                            (event.logicalKey.keyLabel == "Select" ||
+                                event.logicalKey.keyLabel == "Enter")) {
+                          tecla == 'Cerrar' ? onCerrar() : onTecla(tecla);
+                          return KeyEventResult.handled;
+                        }
+                        return KeyEventResult.ignored;
+                      },
+                      child: Builder(builder: (ctx) {
+                        bool focused = Focus
+                            .of(ctx)
+                            .hasFocus;
+                        return InkWell(
+                          onTap: () =>
+                          tecla == 'Cerrar' ? onCerrar() : onTecla(tecla),
+                          child: Container(
+                            margin: const EdgeInsets.all(4),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: focused ? accentColor : Colors.grey[900],
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(
+                                  color: focused ? Colors.white : Colors
+                                      .transparent, width: 2),
+                            ),
+                            child: Text(tecla, style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold)),
+                          ),
+                        );
+                      }),
+                    )).toList(),
+              )).toList(),
         ),
       ),
     );
