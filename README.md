@@ -25,9 +25,11 @@
   <img src="https://img.shields.io/badge/Windows-0078D6?style=for-the-badge&logo=windows&logoColor=white" alt="Windows">
 </div>
 
+<div align="center">
+  
+[![Support Bitcoin](https://img.shields.io/badge/Donar_Bitcoin-F7931A?style=for-the-badge&logo=bitcoin&logoColor=white)](SUPPORT.md)
 
-### ☕ ¿Te gusta el proyecto? [Apóyalo aquí](SUPPORT.md)
-
+</div>
 Welcome to **NeawStreamV-player**! A multimedia solution developed in Flutter, designed to offer a smooth and efficient playback experience on mobile devices, Android TV, and Windows.
 
 ¡Bienvenido a **NeawStreamV-player**! Una solución multimedia desarrollada en **Flutter**, diseñada para ofrecer una experiencia de reproducción fluida y eficiente tanto en **dispositivos móviles como en  y Windows**.
