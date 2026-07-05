@@ -71,7 +71,39 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _scrollController.addListener(_onScroll);
     _inicializarApp();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _verificarAdvertencia());
   }
+  Future<void> _verificarAdvertencia() async {
+    final prefs = await SharedPreferences.getInstance();
+    bool aceptado = prefs.getBool('aviso_aceptado') ?? false;
+
+    if (!aceptado && mounted) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: Theme.of(context).colorScheme.surface,
+          title: const Text("Aviso Legal"),
+          content: const Text(
+            "Descargo de responsabilidad: NeawStreamV-player no proporciona, aloja ni incluye ningún tipo de contenido multimedia. "
+                "Es exclusivamente una herramienta de reproducción que permite a los usuarios reproducir su propio contenido legal "
+                "(como listas M3U o códigos Xtream). No respaldamos ni facilitamos la transmisión de material protegido por "
+                "derechos de autor sin la autorización de sus titulares.",
+          ),
+          actions: [
+            TextButton(
+              onPressed: () async {
+                await prefs.setBool('aviso_aceptado', true);
+                if (mounted) Navigator.pop(ctx);
+              },
+              child: const Text("Aceptar"),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
 
   @override
   void didChangeDependencies() {
