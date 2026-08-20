@@ -30,9 +30,9 @@
 [![Support Bitcoin](https://img.shields.io/badge/Donar_Bitcoin-F7931A?style=for-the-badge&logo=bitcoin&logoColor=white)](SUPPORT.md)
 
 </div>
-Welcome to **NeawStreamV-player**! A multimedia solution developed in Flutter, designed to offer a smooth and efficient playback experience on mobile devices, Android TV, and Windows.
+Welcome to **NeawStreamV-player**! A multimedia solution developed in Flutter, designed to offer a smooth and efficient playback experience on mobile devices, Android TV
 
-¡Bienvenido a **NeawStreamV-player**! Una solución multimedia desarrollada en **Flutter**, diseñada para ofrecer una experiencia de reproducción fluida y eficiente tanto en **dispositivos móviles como en  y Windows**.
+Bienvenido a NeawStreamV-player Una solución multimedia desarrollada en **Flutter**, diseñada para ofrecer una experiencia de reproducción fluida y eficiente tanto en **dispositivos móviles
 
 ## <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Telegram-Animated-Emojis/main/People/Eyes.webp" alt="Eyes" width="25" height="25" />Disclaimer
 **"NeawStreamV-player" es un reproductor multimedia de propósito general. El software no contiene, proporciona, ni preinstala ningún tipo de lista de canales, contenido multimedia, o enlaces a fuentes externas. El usuario es el único responsable de la legalidad, propiedad y uso de los contenidos que decida cargar o reproducir mediante la aplicación. El autor no apoya ni fomenta el uso de material protegido por derechos de autor sin la debida licencia.**
@@ -50,25 +50,11 @@ Welcome to **NeawStreamV-player**! A multimedia solution developed in Flutter, d
 
 <div align="center">
 
-| PC | TV | Phone |
-| :---: | :---: | :---: |
-| <img src="assets/pc screenshot.png" width="300"> | <img src="assets/tv screenshot.png" width="300"> | <img src="assets/phone screenshot.png" width="150"> |
+ TV | Phone |
+| :---: | :---: |
+ <img src="assets/tv screenshot.png" width="300"> | <img src="assets/phone screenshot.png" width="150"> |
 
 </div>
-
-### <img src="assets/windows_logo.png" width="15">  Instalación Windows/Windows Installation
-
-Para comenzar a disfrutar de la aplicación, solo sigue estos sencillos pasos:
-
-1.**Descarga:** Ve a la sección de **[Releases](https://github.com/WykosVx/NeawStreamV-player/releases)** y descarga el archivo NeawStreamV-player.v-5.0.0.rar.
-
-2.**Descompresión:** Haz clic derecho sobre el archivo descargado.
-
-3.**Selecciona "Extraer todo..."** y elige la carpeta donde prefieras tener la aplicación.
-
-4.**Ejecución:** Abre la carpeta descomprimida.
-
-5.Haz doble clic en neawstreamvplayer.exe para iniciar.
 
 ### <img src="assets/android_logo.png" width="15"> Instalación Android
 
@@ -79,7 +65,6 @@ Para comenzar a disfrutar de la aplicación, solo sigue estos sencillos pasos:
 ## <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Telegram-Animated-Emojis/main/Objects/File%20Folder.webp" alt="File Folder" width="25" height="25" /> License
 This project is under the **MIT License**. Check the [LICENSE](LICENSE) file for more details.
 
-![Gif](assets/animation.gif)
 
 # <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Telegram-Animated-Emojis/main/People/People%20Hugging.webp" alt="People Hugging" width="25" height="25" />  Apoyando el desarrollo
 
