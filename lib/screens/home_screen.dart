@@ -73,6 +73,18 @@ class _HomeScreenState extends State<HomeScreen> {
     _inicializarApp();
     WidgetsBinding.instance.addPostFrameCallback((_) => _verificarAdvertencia());
   }
+
+  // Liberación correcta de recursos para evitar fugas de memoria
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    _urlController.dispose();
+    _busquedaController.dispose();
+    _urlFocusNode.dispose();
+    _busquedaFocusNode.dispose();
+    super.dispose();
+  }
+
   Future<void> _verificarAdvertencia() async {
     final prefs = await SharedPreferences.getInstance();
     bool aceptado = prefs.getBool('aviso_aceptado') ?? false;
@@ -103,7 +115,6 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     }
   }
-
 
   @override
   void didChangeDependencies() {
@@ -160,30 +171,40 @@ class _HomeScreenState extends State<HomeScreen> {
     if (url.isEmpty) return;
     setState(() => _cargando = true);
     LogManager.add("Descargando: $url");
+
     try {
       final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('user_url', url);
+
         final lista = await compute(_parsearLista, response.body);
         LogManager.add("Canales cargados: ${lista.length}");
-        setState(() {
-          _canalesCompletos.clear(); _canalesCompletos.addAll(lista);
-          _canalesMostrar.clear(); _canalesMostrar.addAll(_canalesCompletos.take(_itemsPorPagina));
-        });
+        if (mounted) {
+          setState(() {
+            _canalesCompletos.clear(); _canalesCompletos.addAll(lista);
+            _canalesMostrar.clear(); _canalesMostrar.addAll(_canalesCompletos.take(_itemsPorPagina));
+          });
+        }
       } else {
         LogManager.add("Error servidor: ${response.statusCode}");
       }
     } catch (e) {
       LogManager.add("Error: $e");
-    } finally { setState(() => _cargando = false); }
+    } finally {
+      if (mounted) setState(() => _cargando = false);
+    }
   }
 
   Future<void> _cargarConfiguracion() async {
     final prefs = await SharedPreferences.getInstance();
     final data = await AppSettings.getSettings();
-    setState(() {
-      _urlController.text = prefs.getString('user_url') ?? "";
-      _mostrarLogs = data['showLogs'] ?? false;
-    });
+    if (mounted) {
+      setState(() {
+        _urlController.text = prefs.getString('user_url') ?? "";
+        _mostrarLogs = data['showLogs'] ?? false;
+      });
+    }
   }
 
   @override
@@ -197,190 +218,197 @@ class _HomeScreenState extends State<HomeScreen> {
           IconButton(icon: const Icon(Icons.settings), onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => SettingsScreen())).then((_) => _cargarConfiguracion())),
         ]),
         body: Stack(
-            children: [
-              Column(
-                  children: [
-                    Padding(
-                        padding: const EdgeInsets.all(12.0),
-                        child: Row(
-                            children: [
-                              Expanded(
-                                child: _isTV
-                                    ? InkWell(
-                                  onTap: () => setState(() {
-                                    _buscando = false;
-                                    _mostrarTeclado = true;
-                                  }),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 15),
-                                    decoration: BoxDecoration(
-                                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                                      borderRadius: BorderRadius.circular(4),
-                                      border: Border.all(color: Colors.grey),
-                                    ),
-                                    child: Text(
-                                      _urlController.text.isEmpty ? "URL..." : _urlController.text,
-                                      style: const TextStyle(fontSize: 16),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                )
-                                    : TextField(
-                                  controller: _urlController,
-                                  focusNode: _urlFocusNode,
-                                  readOnly: _isTV,
-                                  showCursor: !_isTV,
-                                  decoration: InputDecoration(
-                                    hintText: "URL...",
-                                    filled: true,
-                                    fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-                                    border: const OutlineInputBorder(),
-                                  ),
+          children: [
+            Column(
+              children: [
+                Padding(
+                    padding: const EdgeInsets.all(12.0),
+                    child: Row(
+                        children: [
+                          Expanded(
+                            child: _isTV
+                                ? InkWell(
+                              onTap: () => setState(() {
+                                _buscando = false;
+                                _mostrarTeclado = true;
+                              }),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 15),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                  borderRadius: BorderRadius.circular(4),
+                                  border: Border.all(color: Colors.grey),
+                                ),
+                                child: Text(
+                                  _urlController.text.isEmpty ? "URL..." : _urlController.text,
+                                  style: const TextStyle(fontSize: 16),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
-              IconButton(icon: Icon(Icons.download, color: accentColor), onPressed: () => _procesarURL(_urlController.text)),
-            ])),
-                    if (_buscando)
-                      Padding(
-                          padding: const EdgeInsets.all(12.0),
-                          child: Row(
-                              children: [
-                                Expanded(
-                                  child: _isTV
-                                      ? InkWell(
-                                    onTap: () => setState(() => _mostrarTeclado = true),
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 15),
-                                      decoration: BoxDecoration(
-                                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                                        borderRadius: BorderRadius.circular(4),
-                                        border: Border.all(color: Colors.grey),
-                                      ),
-                                      child: Text(
-                                        _busquedaController.text.isEmpty ? "Buscar..." : _busquedaController.text,
-                                        style: const TextStyle(fontSize: 16),
-                                      ),
-                                    ),
-                                  )
-                                      : TextField(
-                                    controller: _busquedaController,
-                                    decoration: const InputDecoration(hintText: "Buscar...", filled: true),
-                                  ),
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.check, color: Colors.green),
-                                  onPressed: () {
-                                    setState(() {
-                                      _canalesMostrar.clear();
-                                      _canalesMostrar.addAll(_canalesCompletos.where((c) =>
-                                          c.nombre.toLowerCase().contains(_busquedaController.text.toLowerCase())));
-                                      _mostrarTeclado = false;
-                                    });
-                                  },
-                                ),
-                              ],
+                            )
+                                : TextField(
+                              controller: _urlController,
+                              focusNode: _urlFocusNode,
+                              readOnly: _isTV,
+                              showCursor: !_isTV,
+                              decoration: InputDecoration(
+                                hintText: "URL...",
+                                filled: true,
+                                fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                border: const OutlineInputBorder(),
+                              ),
+                            ),
                           ),
-                      ),
-                    Expanded(
-                      child: GridView.builder(
-                        controller: _scrollController,
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: MediaQuery.of(context).size.width < 600 ? 4 : 10,
-                        ),
-                        itemCount: _canalesMostrar.length,
-                        itemBuilder: (context, i) {
-                          final canal = _canalesMostrar[i];
-                          return InkWell(
-                            onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => PlayerScreen(
-                                  listaCanales: _canalesCompletos,
-                                  indiceInicial: i,
-                                  titulo: canal.nombre,
-                                  isTV: true,
-                                ),
+                          IconButton(icon: Icon(Icons.download, color: accentColor), onPressed: () => _procesarURL(_urlController.text)),
+                        ])),
+                if (_buscando)
+                  Padding(
+                    padding: const EdgeInsets.all(12.0),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _isTV
+                              ? InkWell(
+                            onTap: () => setState(() => _mostrarTeclado = true),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 15),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                borderRadius: BorderRadius.circular(4),
+                                border: Border.all(color: Colors.grey),
+                              ),
+                              child: Text(
+                                _busquedaController.text.isEmpty ? "Buscar..." : _busquedaController.text,
+                                style: const TextStyle(fontSize: 16),
                               ),
                             ),
-                            child: Card(
-                              color: Theme.of(context).colorScheme.surfaceContainer,
-                              clipBehavior: Clip.antiAlias,
-                              child: Stack(
-                                children: [
-                                  if (canal.logoUrl.isNotEmpty)
-                                    Positioned.fill(
-                                      child: Opacity(
-                                        opacity: 0.3,
-                                        child: CachedNetworkImage(
-                                          imageUrl: canal.logoUrl,
-                                          fit: BoxFit.cover,
-                                        ),
-                                      ),
-                                    ),
-                                  Center(
-                                    child: Text(
-                                      canal.nombre,
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        color: Theme.of(context).colorScheme.onSurface,
-                                        fontWeight: FontWeight.bold,
-                                      ),
+                          )
+                              : TextField(
+                            controller: _busquedaController,
+                            decoration: const InputDecoration(hintText: "Buscar...", filled: true),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.check, color: Colors.green),
+                          onPressed: () {
+                            setState(() {
+                              _canalesMostrar.clear();
+                              _canalesMostrar.addAll(_canalesCompletos.where((c) =>
+                                  c.nombre.toLowerCase().contains(_busquedaController.text.toLowerCase())));
+                              _mostrarTeclado = false;
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                Expanded(
+                  child: GridView.builder(
+                    controller: _scrollController,
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: MediaQuery.of(context).size.width < 600 ? 4 : 10,
+                    ),
+                    itemCount: _canalesMostrar.length,
+                    itemBuilder: (context, i) {
+                      final canal = _canalesMostrar[i];
+                      return InkWell(
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => PlayerScreen(
+                              listaCanales: _canalesCompletos,
+                              indiceInicial: i,
+                              titulo: canal.nombre,
+                              isTV: _isTV,
+                            ),
+                          ),
+                        ),
+                        child: Card(
+                          color: Theme.of(context).colorScheme.surfaceContainer,
+                          clipBehavior: Clip.antiAlias,
+                          child: Stack(
+                            children: [
+                              if (canal.logoUrl.isNotEmpty)
+                                Positioned.fill(
+                                  child: Opacity(
+                                    opacity: 0.3,
+                                    child: CachedNetworkImage(
+                                      imageUrl: canal.logoUrl,
+                                      fit: BoxFit.cover,
                                     ),
                                   ),
-                                ],
+                                ),
+                              Center(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(4.0),
+                                  child: Text(
+                                    canal.nombre,
+                                    textAlign: TextAlign.center,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: Theme.of(context).colorScheme.onSurface,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ),
                               ),
-                            ),
-                          );
-                        },
-                      ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+            if (_mostrarLogs)
+              Positioned(
+                bottom: 20,
+                right: 20,
+                width: 250,
+                height: 200,
+                child: Container(
+                  color: Colors.black.withOpacity(0.8),
+                  child: ListView.builder(
+                    itemCount: LogManager.logs.length,
+                    itemBuilder: (_, i) => Text(
+                      LogManager.logs[i],
+                      style: const TextStyle(color: Colors.green, fontSize: 9),
                     ),
-                  ],
+                  ),
+                ),
               ),
-              if (_mostrarLogs)
-                Positioned(
-                  bottom: 20,
-                  right: 20,
-                  width: 250,
-                  height: 200,
-                  child: Container(
-                    color: Colors.black.withOpacity(0.8),
-                    child: ListView.builder(
-                      itemCount: LogManager.logs.length,
-                      itemBuilder: (_, i) => Text(
-                        LogManager.logs[i],
-                        style: const TextStyle(color: Colors.green, fontSize: 9),
-                      ),
-                    ),
-                  ),
+            if (_mostrarTeclado)
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: TecladoTV(
+                  accentColor: accentColor,
+                  onCerrar: () => setState(() => _mostrarTeclado = false),
+                  onTecla: (t) => setState(() {
+                    var ctrl = _buscando ? _busquedaController : _urlController;
+                    if (t == "Borrar") {
+                      if (ctrl.text.isNotEmpty) ctrl.text = ctrl.text.substring(0, ctrl.text.length - 1);
+                    } else if (t == "Espacio") {
+                      ctrl.text += " ";
+                    } else if (t != "Cerrar") {
+                      ctrl.text += t;
+                    }
+                  }),
                 ),
-              if (_mostrarTeclado)
-                Positioned(
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  child: TecladoTV(
-                    accentColor: accentColor,
-                    onCerrar: () => setState(() => _mostrarTeclado = false),
-                    onTecla: (t) => setState(() {
-                      var ctrl = _buscando ? _busquedaController : _urlController;
-                      if (t == "Borrar") {
-                        if (ctrl.text.isNotEmpty) ctrl.text = ctrl.text.substring(0, ctrl.text.length - 1);
-                      } else if (t == "Espacio") {
-                        ctrl.text += " ";
-                      } else if (t != "Cerrar") {
-                        ctrl.text += t;
-                      }
-                    }),
-                  ),
-                ),
-            ],
+              ),
+          ],
         ),
       );
     },
     );
   }
 }
+
 class TecladoTV extends StatelessWidget {
   final Function(String) onTecla;
   final VoidCallback onCerrar;
@@ -422,12 +450,9 @@ class TecladoTV extends StatelessWidget {
                         return KeyEventResult.ignored;
                       },
                       child: Builder(builder: (ctx) {
-                        bool focused = Focus
-                            .of(ctx)
-                            .hasFocus;
+                        bool focused = Focus.of(ctx).hasFocus;
                         return InkWell(
-                          onTap: () =>
-                          tecla == 'Cerrar' ? onCerrar() : onTecla(tecla),
+                          onTap: () => tecla == 'Cerrar' ? onCerrar() : onTecla(tecla),
                           child: Container(
                             margin: const EdgeInsets.all(4),
                             padding: const EdgeInsets.symmetric(
@@ -436,8 +461,7 @@ class TecladoTV extends StatelessWidget {
                               color: focused ? accentColor : Colors.grey[900],
                               borderRadius: BorderRadius.circular(4),
                               border: Border.all(
-                                  color: focused ? Colors.white : Colors
-                                      .transparent, width: 2),
+                                  color: focused ? Colors.white : Colors.transparent, width: 2),
                             ),
                             child: Text(tecla, style: const TextStyle(
                                 color: Colors.white,
