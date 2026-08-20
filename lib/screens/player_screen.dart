@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
 import 'package:lottie/lottie.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 import 'models/canal_model.dart';
 
 class PlayerScreen extends StatefulWidget {
@@ -28,14 +29,24 @@ class _PlayerScreenState extends State<PlayerScreen> {
   ChewieController? _chewieController;
   late int _indiceActual;
   bool _isLoading = true;
-  
-  // Nodo de enfoque obligatorio para que la TV detecte las teclas del control remoto
+
+  // Control para evitar doble pulsación rápida en la TV que sature la memoria
+  bool _cambiandoCanal = false;
+
+  // Animación Lottie pre-cacheada para evitar tirones de rendimiento
+  late final Future<LottieComposition> _lottieComposition;
+
   final FocusNode _focusNode = FocusNode();
 
   @override
   void initState() {
     super.initState();
     _indiceActual = widget.indiceInicial;
+
+    // Precargamos la composición de Lottie en memoria una sola vez
+    _lottieComposition = AssetLottie('assets/animations/wykos_animation.json').load();
+
+    WakelockPlus.enable();
 
     if (widget.isTV) {
       SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
@@ -47,30 +58,40 @@ class _PlayerScreenState extends State<PlayerScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Forzamos el foco en la pantalla para las teclas de la TV
     FocusScope.of(context).requestFocus(_focusNode);
   }
 
-  void _inicializarCanal(String url) async {
+  Future<void> _inicializarCanal(String url) async {
+    await _liberarRecursosAnteriores();
+
+    if (!mounted) return;
+
     setState(() {
       _isLoading = true;
     });
 
-    _videoPlayerController = VideoPlayerController.networkUrl(
+    final localController = VideoPlayerController.networkUrl(
       Uri.parse(url),
       httpHeaders: {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
       },
     );
 
+    _videoPlayerController = localController;
+
     try {
-      await _videoPlayerController!.initialize();
+      await localController.initialize();
+
+      if (!mounted || _videoPlayerController != localController) {
+        localController.dispose();
+        return;
+      }
 
       _chewieController = ChewieController(
-        videoPlayerController: _videoPlayerController!,
+        videoPlayerController: localController,
         autoPlay: true,
         looping: false,
-        aspectRatio: _videoPlayerController!.value.aspectRatio,
+        aspectRatio: localController.value.aspectRatio,
         showControls: true,
         materialProgressColors: ChewieProgressColors(
           playedColor: Colors.blueAccent,
@@ -89,31 +110,43 @@ class _PlayerScreenState extends State<PlayerScreen> {
         },
       );
 
-      await Future.delayed(const Duration(milliseconds: 800));
+      await Future.delayed(const Duration(milliseconds: 400));
 
       if (mounted) {
         setState(() {
           _isLoading = false;
+          _cambiandoCanal = false; // Liberamos el bloqueo de cambio
         });
-        // Aseguramos mantener el foco después de cargar para la TV
         FocusScope.of(context).requestFocus(_focusNode);
       }
     } catch (e) {
       if (mounted) {
         setState(() {
           _isLoading = false;
+          _cambiandoCanal = false;
         });
       }
     }
   }
 
+  Future<void> _liberarRecursosAnteriores() async {
+    try {
+      _chewieController?.dispose();
+      _chewieController = null;
+
+      await _videoPlayerController?.dispose();
+      _videoPlayerController = null;
+    } catch (_) {}
+  }
+
   void _cambiarCanal(int direccion) {
+    // Si ya está cambiando de canal, ignoramos para evitar colapsar la TV
+    if (_cambiandoCanal) return;
+
     int nuevoIndice = _indiceActual + direccion;
     if (nuevoIndice >= 0 && nuevoIndice < widget.listaCanales.length) {
-      _chewieController?.dispose();
-      _videoPlayerController?.dispose();
-
       setState(() {
+        _cambiandoCanal = true;
         _indiceActual = nuevoIndice;
         _isLoading = true;
       });
@@ -124,9 +157,10 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
   @override
   void dispose() {
+    WakelockPlus.disable();
     _focusNode.dispose();
-    _chewieController?.dispose();
-    _videoPlayerController?.dispose();
+    _liberarRecursosAnteriores();
+
     if (widget.isTV) {
       SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     }
@@ -142,20 +176,15 @@ class _PlayerScreenState extends State<PlayerScreen> {
       },
       child: Scaffold(
         backgroundColor: Colors.black,
-        // Usamos RawKeyboardListener o Focus para capturar los botones del control remoto de la TV
         body: Focus(
           focusNode: _focusNode,
           onKey: (node, event) {
-            // Detectamos cuando se presiona una tecla en el control remoto de la TV
             if (event is KeyDownEvent) {
-              // Flecha Arriba o Botón de Canal+ en la TV cambia al canal anterior
               if (event.logicalKey == LogicalKeyboardKey.arrowUp ||
                   event.logicalKey == LogicalKeyboardKey.channelUp) {
                 _cambiarCanal(-1);
                 return KeyEventResult.handled;
-              }
-              // Flecha Abajo o Botón de Canal- en la TV cambia al canal siguiente
-              else if (event.logicalKey == LogicalKeyboardKey.arrowDown ||
+              } else if (event.logicalKey == LogicalKeyboardKey.arrowDown ||
                   event.logicalKey == LogicalKeyboardKey.channelDown) {
                 _cambiarCanal(1);
                 return KeyEventResult.handled;
@@ -166,14 +195,12 @@ class _PlayerScreenState extends State<PlayerScreen> {
           child: SafeArea(
             child: Stack(
               children: [
-                // Reproductor con Chewie optimizado para TV
                 Center(
                   child: (!_isLoading && _chewieController != null && _chewieController!.videoPlayerController.value.isInitialized)
                       ? Chewie(controller: _chewieController!)
                       : const SizedBox.shrink(),
                 ),
 
-                // Pantalla de carga con animación Lottie
                 if (_isLoading)
                   Container(
                     color: Colors.black,
@@ -183,10 +210,19 @@ class _PlayerScreenState extends State<PlayerScreen> {
                         children: [
                           const CircularProgressIndicator(color: Colors.blueAccent),
                           const SizedBox(height: 20),
+                          // Usamos el Lottie precargado para que la TV vuele sin tirones gráficos
                           SizedBox(
-                            width: 150,
-                            height: 80,
-                            child: Lottie.asset('assets/animations/wykos_animation.json'),
+                            width: widget.isTV ? 100 : 150,
+                            height: widget.isTV ? 60 : 80,
+                            child: FutureBuilder<LottieComposition>(
+                              future: _lottieComposition,
+                              builder: (context, snapshot) {
+                                if (snapshot.hasData) {
+                                  return Lottie(composition: snapshot.data!);
+                                }
+                                return const SizedBox.shrink();
+                              },
+                            ),
                           ),
                           const SizedBox(height: 10),
                           Text(
@@ -198,7 +234,6 @@ class _PlayerScreenState extends State<PlayerScreen> {
                     ),
                   ),
 
-                // Botón de retroceso (visible por si se usa en dispositivos táctiles o tv box con mouse)
                 Positioned(
                   top: 10,
                   left: 10,
