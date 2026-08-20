@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'dart:ui'; // Necesario para el efecto Glass (BackdropFilter e ImageFilter)
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/foundation.dart';
@@ -12,6 +13,63 @@ import 'player_screen.dart';
 import 'settings_screen.dart';
 import '../app_settings.dart';
 import '../main.dart';
+
+// --- Componente Glassmorphism Dinámico ---
+class GlassContainer extends StatelessWidget {
+  final Widget child;
+  final double blur;
+  final double opacity;
+  final BorderRadius? borderRadius;
+  final EdgeInsetsGeometry? padding;
+  final EdgeInsetsGeometry? margin;
+  final Color accentColor;
+  final Border? customBorder;
+
+  const GlassContainer({
+    super.key,
+    required this.child,
+    this.blur = 12.0,
+    this.opacity = 0.15,
+    this.borderRadius,
+    this.padding,
+    this.margin,
+    required this.accentColor,
+    this.customBorder,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: margin,
+      child: ClipRRect(
+        borderRadius: borderRadius ?? BorderRadius.circular(16.0),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
+          child: Container(
+            padding: padding ?? const EdgeInsets.all(8.0),
+            decoration: BoxDecoration(
+              color: accentColor.withOpacity(opacity),
+              borderRadius: borderRadius ?? BorderRadius.circular(16.0),
+              border: customBorder ?? Border.all(
+                color: accentColor.withOpacity(0.35),
+                width: 1.2,
+              ),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  accentColor.withOpacity(opacity + 0.08),
+                  accentColor.withOpacity(opacity - 0.04),
+                ],
+              ),
+            ),
+            child: child,
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 // --- Funciones ---
 List<Canal> _parsearLista(String body) {
@@ -74,7 +132,6 @@ class _HomeScreenState extends State<HomeScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) => _verificarAdvertencia());
   }
 
-  // Liberación correcta de recursos para evitar fugas de memoria
   @override
   void dispose() {
     _scrollController.dispose();
@@ -324,15 +381,19 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ),
                         ),
-                        child: Card(
-                          color: Theme.of(context).colorScheme.surfaceContainer,
-                          clipBehavior: Clip.antiAlias,
+                        // Tarjeta de Canal con Glassmorphism dinámico conectado a los ajustes
+                        child: GlassContainer(
+                          accentColor: accentColor,
+                          blur: 8.0,
+                          opacity: 0.12,
+                          borderRadius: BorderRadius.circular(12),
+                          padding: EdgeInsets.zero,
                           child: Stack(
                             children: [
                               if (canal.logoUrl.isNotEmpty)
                                 Positioned.fill(
                                   child: Opacity(
-                                    opacity: 0.3,
+                                    opacity: 0.25,
                                     child: CachedNetworkImage(
                                       imageUrl: canal.logoUrl,
                                       fit: BoxFit.cover,
@@ -347,10 +408,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                     textAlign: TextAlign.center,
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      color: Theme.of(context).colorScheme.onSurface,
+                                    style: const TextStyle(
+                                      color: Colors.white,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 11,
+                                      shadows: [
+                                        Shadow(blurRadius: 4, color: Colors.black, offset: Offset(0, 1))
+                                      ],
                                     ),
                                   ),
                                 ),
@@ -370,13 +434,17 @@ class _HomeScreenState extends State<HomeScreen> {
                 right: 20,
                 width: 250,
                 height: 200,
-                child: Container(
-                  color: Colors.black.withOpacity(0.8),
+                // Panel de Logs flotante con Glassmorphism dinámico
+                child: GlassContainer(
+                  accentColor: accentColor,
+                  blur: 15.0,
+                  opacity: 0.25,
+                  borderRadius: BorderRadius.circular(12),
                   child: ListView.builder(
                     itemCount: LogManager.logs.length,
                     itemBuilder: (_, i) => Text(
                       LogManager.logs[i],
-                      style: const TextStyle(color: Colors.green, fontSize: 9),
+                      style: const TextStyle(color: Colors.greenAccent, fontSize: 9),
                     ),
                   ),
                 ),
