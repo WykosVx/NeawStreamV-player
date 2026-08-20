@@ -52,7 +52,14 @@ class _PlayerScreenState extends State<PlayerScreen> {
       SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
     }
 
-    _inicializarCanal(widget.listaCanales[_indiceActual].url);
+    // --- MEJORA 1: Le damos 300ms a la TV para montar la pantalla antes de golpear el procesador con el video ---
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted) {
+          _inicializarCanal(widget.listaCanales[_indiceActual].url);
+        }
+      });
+    });
   }
 
   @override
@@ -70,10 +77,12 @@ class _PlayerScreenState extends State<PlayerScreen> {
       _isLoading = true;
     });
 
+    // --- MEJORA 2: Forzamos formatHint HLS para evitar que ExoPlayer gaste RAM adivinando el contenedor ---
     final localController = VideoPlayerController.networkUrl(
       Uri.parse(url),
-      httpHeaders: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      formatHint: VideoFormat.hls,
+      httpHeaders: const {
+        "User-Agent": "Mozilla/5.0 (Linux; Android 11; TV) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.210 Safari/537.36",
       },
     );
 
@@ -93,6 +102,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
         looping: false,
         aspectRatio: localController.value.aspectRatio,
         showControls: true,
+        allowedScreenSleep: false,
         materialProgressColors: ChewieProgressColors(
           playedColor: Colors.blueAccent,
           handleColor: Colors.blue,
@@ -109,8 +119,6 @@ class _PlayerScreenState extends State<PlayerScreen> {
           );
         },
       );
-
-      await Future.delayed(const Duration(milliseconds: 400));
 
       if (mounted) {
         setState(() {
@@ -140,7 +148,6 @@ class _PlayerScreenState extends State<PlayerScreen> {
   }
 
   void _cambiarCanal(int direccion) {
-    // Si ya está cambiando de canal, ignoramos para evitar colapsar la TV
     if (_cambiandoCanal) return;
 
     int nuevoIndice = _indiceActual + direccion;
@@ -210,15 +217,19 @@ class _PlayerScreenState extends State<PlayerScreen> {
                         children: [
                           const CircularProgressIndicator(color: Colors.blueAccent),
                           const SizedBox(height: 20),
-                          // Usamos el Lottie precargado para que la TV vuele sin tirones gráficos
+                          // --- MEJORA 3: Lottie en tamaño reducido para no saturar la GPU de la TV ---
                           SizedBox(
-                            width: widget.isTV ? 100 : 150,
-                            height: widget.isTV ? 60 : 80,
+                            width: 80,
+                            height: 50,
                             child: FutureBuilder<LottieComposition>(
                               future: _lottieComposition,
                               builder: (context, snapshot) {
                                 if (snapshot.hasData) {
-                                  return Lottie(composition: snapshot.data!);
+                                  return Lottie(
+                                    composition: snapshot.data!,
+                                    // Limita el renderizado visual
+                                    filterQuality: FilterQuality.low,
+                                  );
                                 }
                                 return const SizedBox.shrink();
                               },
