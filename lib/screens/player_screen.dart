@@ -1,9 +1,7 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:media_kit/media_kit.dart';
-import 'package:media_kit_video/media_kit_video.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:video_player/video_player.dart';
+import 'package:chewie/chewie.dart';
 import 'package:lottie/lottie.dart';
 import 'models/canal_model.dart';
 
@@ -26,114 +24,109 @@ class PlayerScreen extends StatefulWidget {
 }
 
 class _PlayerScreenState extends State<PlayerScreen> {
-  Player? _player;
-  VideoController? _controller;
+  VideoPlayerController? _videoPlayerController;
+  ChewieController? _chewieController;
+  late int _indiceActual;
+  bool _isLoading = true;
+  
+  // Nodo de enfoque obligatorio para que la TV detecte las teclas del control remoto
   final FocusNode _focusNode = FocusNode();
-  StreamSubscription? _bufferSubscription;
-
-  late int _indiceActual = widget.indiceInicial;
-  bool _isLoading = false;
-  bool _isDisposed = false;
-  bool _isReconnecting = false;
-  double _progresoBuffer = 0.0;
-  int _reintentos = 0;
 
   @override
   void initState() {
     super.initState();
+    _indiceActual = widget.indiceInicial;
+
     if (widget.isTV) {
       SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
     }
-    _cargarCanal();
+
+    _inicializarCanal(widget.listaCanales[_indiceActual].url);
   }
 
-  Future<void> _cargarCanal() async {
-    if (_player != null) {
-      await _player!.stop();
-      await _player!.dispose();
-      _player = null;
-    }
-    _bufferSubscription?.cancel();
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Forzamos el foco en la pantalla para las teclas de la TV
+    FocusScope.of(context).requestFocus(_focusNode);
+  }
 
-    if (_isDisposed) return;
-
+  void _inicializarCanal(String url) async {
     setState(() {
       _isLoading = true;
-      _progresoBuffer = 0.0;
     });
 
-    final prefs = await SharedPreferences.getInstance();
-    int bufferMb = prefs.getInt('buffer_size') ?? 128;
-    int bufferBytes = bufferMb * 1024 * 1024;
+    _videoPlayerController = VideoPlayerController.networkUrl(
+      Uri.parse(url),
+      httpHeaders: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      },
+    );
 
-    _player = Player(configuration: PlayerConfiguration(bufferSize: bufferBytes, vo: 'mediacodec'));
-    _controller = VideoController(_player!);
+    try {
+      await _videoPlayerController!.initialize();
 
-    final platform = _player!.platform as dynamic;
-    platform.setProperty('hwdec', 'mediacodec');
-    platform.setProperty('hwdec-codecs', 'h264,hevc,vp9');
-    platform.setProperty('video-sync', 'display-adrop');
-    platform.setProperty('opengl-pbo', 'no');
-    platform.setProperty('vd-lavc-threads', '0');
-    platform.setProperty('video-sync', 'display-resample');
-    platform.setProperty('vsync', 'yes');
-    platform.setProperty('swapinterval', '1');
-    platform.setProperty('interpolation', 'yes');
-    platform.setProperty('tscale', 'oversample');
-    platform.setProperty('framedrop', 'decoder');
-    platform.setProperty('vd-lavc-dr', 'yes');
-    platform.setProperty('cache', 'yes');
-    platform.setProperty('cache-initial', '5000');
-    platform.setProperty('cache-secs', '30');
-    platform.setProperty('demuxer-max-bytes', '128MiB');
-    platform.setProperty('demuxer-max-back-bytes', '32MiB');
-    platform.setProperty('reconnect-stream', 'yes');
-    platform.setProperty('network-timeout', '10');
-    platform.setProperty('hr-seek', 'yes');
+      _chewieController = ChewieController(
+        videoPlayerController: _videoPlayerController!,
+        autoPlay: true,
+        looping: false,
+        aspectRatio: _videoPlayerController!.value.aspectRatio,
+        showControls: true,
+        materialProgressColors: ChewieProgressColors(
+          playedColor: Colors.blueAccent,
+          handleColor: Colors.blue,
+          backgroundColor: Colors.grey,
+          bufferedColor: Colors.white54,
+        ),
+        placeholder: Container(color: Colors.black),
+        errorBuilder: (context, errorMessage) {
+          return const Center(
+            child: Text(
+              "Error al cargar el canal",
+              style: TextStyle(color: Colors.white),
+            ),
+          );
+        },
+      );
 
-    _player!.setVolume(0.0);
+      await Future.delayed(const Duration(milliseconds: 800));
 
-    _bufferSubscription = _player!.stream.buffer.listen((buffer) {
-      if (_isDisposed || !_isLoading) return;
-
-      double duracionMs = buffer.inMilliseconds.toDouble();
-      double metaMs = 10000.0;
-
-      setState(() {
-        _progresoBuffer = (duracionMs / metaMs).clamp(0.0, 1.0);
-      });
-
-      if (duracionMs >= metaMs) {
-        _bufferSubscription?.cancel();
-        if (mounted) {
-          setState(() {
-            _isLoading = false;
-            _player!.setVolume(100.0);
-            _player!.seek(Duration.zero);
-            _player!.play();
-          });
-        }
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        // Aseguramos mantener el foco después de cargar para la TV
+        FocusScope.of(context).requestFocus(_focusNode);
       }
-    });
-
-    await _player!.open(Media(widget.listaCanales[_indiceActual].url));
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   void _cambiarCanal(int direccion) {
     int nuevoIndice = _indiceActual + direccion;
     if (nuevoIndice >= 0 && nuevoIndice < widget.listaCanales.length) {
-      _reintentos = 0;
-      setState(() => _indiceActual = nuevoIndice);
-      _cargarCanal();
+      _chewieController?.dispose();
+      _videoPlayerController?.dispose();
+
+      setState(() {
+        _indiceActual = nuevoIndice;
+        _isLoading = true;
+      });
+
+      _inicializarCanal(widget.listaCanales[_indiceActual].url);
     }
   }
 
   @override
   void dispose() {
-    _isDisposed = true;
-    _bufferSubscription?.cancel();
-    _player?.dispose();
     _focusNode.dispose();
+    _chewieController?.dispose();
+    _videoPlayerController?.dispose();
     if (widget.isTV) {
       SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     }
@@ -142,51 +135,81 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return Scaffold(
-        backgroundColor: Colors.black,
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              CircularProgressIndicator(value: _progresoBuffer),
-              const SizedBox(height: 20),
-              SizedBox(width: 150, height: 80, child: Lottie.asset('assets/animations/wykos_animation.json')),
-              const SizedBox(height: 10),
-              Text("Cargando: ${widget.listaCanales[_indiceActual].nombre}", style: const TextStyle(color: Colors.white)),
-              Text("${(_progresoBuffer * 100).toInt()}%", style: const TextStyle(color: Colors.white54)),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return Focus(
-      autofocus: true,
-      focusNode: _focusNode,
-      onKeyEvent: (node, event) {
-        if (event is KeyDownEvent) {
-          if (event.logicalKey == LogicalKeyboardKey.escape) {
-            Navigator.pop(context);
-            return KeyEventResult.handled;
-          } else if (event.logicalKey == LogicalKeyboardKey.select || event.logicalKey == LogicalKeyboardKey.enter) {
-            _player?.playOrPause();
-            return KeyEventResult.handled;
-          } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
-            _cambiarCanal(1);
-            return KeyEventResult.handled;
-          } else if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
-            _cambiarCanal(-1);
-            return KeyEventResult.handled;
-          }
-        }
-        return KeyEventResult.ignored;
+    return WillPopScope(
+      onWillPop: () async {
+        Navigator.pop(context);
+        return false;
       },
       child: Scaffold(
         backgroundColor: Colors.black,
-        body: Video(
-          controller: _controller!,
-          fit: BoxFit.contain,
+        // Usamos RawKeyboardListener o Focus para capturar los botones del control remoto de la TV
+        body: Focus(
+          focusNode: _focusNode,
+          onKey: (node, event) {
+            // Detectamos cuando se presiona una tecla en el control remoto de la TV
+            if (event is KeyDownEvent) {
+              // Flecha Arriba o Botón de Canal+ en la TV cambia al canal anterior
+              if (event.logicalKey == LogicalKeyboardKey.arrowUp ||
+                  event.logicalKey == LogicalKeyboardKey.channelUp) {
+                _cambiarCanal(-1);
+                return KeyEventResult.handled;
+              }
+              // Flecha Abajo o Botón de Canal- en la TV cambia al canal siguiente
+              else if (event.logicalKey == LogicalKeyboardKey.arrowDown ||
+                  event.logicalKey == LogicalKeyboardKey.channelDown) {
+                _cambiarCanal(1);
+                return KeyEventResult.handled;
+              }
+            }
+            return KeyEventResult.ignored;
+          },
+          child: SafeArea(
+            child: Stack(
+              children: [
+                // Reproductor con Chewie optimizado para TV
+                Center(
+                  child: (!_isLoading && _chewieController != null && _chewieController!.videoPlayerController.value.isInitialized)
+                      ? Chewie(controller: _chewieController!)
+                      : const SizedBox.shrink(),
+                ),
+
+                // Pantalla de carga con animación Lottie
+                if (_isLoading)
+                  Container(
+                    color: Colors.black,
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const CircularProgressIndicator(color: Colors.blueAccent),
+                          const SizedBox(height: 20),
+                          SizedBox(
+                            width: 150,
+                            height: 80,
+                            child: Lottie.asset('assets/animations/wykos_animation.json'),
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            "Cargando: ${widget.listaCanales[_indiceActual].nombre}",
+                            style: const TextStyle(color: Colors.white, fontSize: 16),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                // Botón de retroceso (visible por si se usa en dispositivos táctiles o tv box con mouse)
+                Positioned(
+                  top: 10,
+                  left: 10,
+                  child: IconButton(
+                    icon: const Icon(Icons.arrow_back, color: Colors.white, size: 30),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
