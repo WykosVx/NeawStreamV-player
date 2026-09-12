@@ -29,9 +29,9 @@
 [![Support Bitcoin](https://img.shields.io/badge/Donar_Bitcoin-F7931A?style=for-the-badge&logo=bitcoin&logoColor=white)](SUPPORT.md)
 
 </div>
-Welcome to **NeawStreamV-player**! A multimedia solution developed in Flutter, designed to offer a smooth and efficient playback experience on mobile devices, Android TV
+Welcome to **NeawStreamV-player** ! A multimedia solution developed in Flutter, designed to offer a smooth and efficient playback experience on mobile devices, Android TV
 
-Bienvenido a NeawStreamV-player Una solución multimedia desarrollada en **Flutter**, diseñada para ofrecer una experiencia de reproducción fluida y eficiente tanto en **dispositivos móviles
+Bienvenido a NeawStreamV-player Una solución multimedia desarrollada en **Flutter**, diseñada para ofrecer una experiencia de reproducción fluida y eficiente en **dispositivos móviles**
 
 ## <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Telegram-Animated-Emojis/main/People/Eyes.webp" alt="Eyes" width="25" height="25" />Disclaimer
 **"NeawStreamV-player" es un reproductor multimedia de propósito general. El software no contiene, proporciona, ni preinstala ningún tipo de lista de canales, contenido multimedia, o enlaces a fuentes externas. El usuario es el único responsable de la legalidad, propiedad y uso de los contenidos que decida cargar o reproducir mediante la aplicación. El autor no apoya ni fomenta el uso de material protegido por derechos de autor sin la debida licencia.**
@@ -49,9 +49,9 @@ Bienvenido a NeawStreamV-player Una solución multimedia desarrollada en **Flutt
 
 <div align="center">
 
- TV | Phone |
-| :---: | :---: |
- <img src="assets/tv screenshot.png" width="300"> | <img src="assets/phone screenshot.png" width="150"> |
+| Phone |
+| :---: |
+| <img src="assets/phone screenshot.png" width="150"> |
 
 </div>
 
